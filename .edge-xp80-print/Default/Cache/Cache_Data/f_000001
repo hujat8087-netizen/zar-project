@@ -1,0 +1,2156 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#18202f" />
+  <title>Counter | زعفران بریانی</title>
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="stylesheet" href="/styles.css?v=80" />
+  <script src="/password-toggle.js"></script>
+  <script src="/auth.js"></script>
+  <script src="/theme.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/menu-custom.js?v=48"></script>
+  <script src="/menu-data.js?v=51"></script>
+</head>
+<body>
+  <section id="loginScreen" class="login-screen">
+    <div class="login-panel">
+      <p class="eyebrow">زعفران بریانی</p>
+      <h1>Counter Login</h1>
+      <p>Cashier and sales history</p>
+      <div class="field">
+        <label for="counterPassword">Password</label>
+        <div class="password-field">
+          <input id="counterPassword" class="input" type="password" autocomplete="current-password" placeholder="Enter password" />
+          <button type="button" class="password-toggle" data-password-toggle aria-controls="counterPassword" aria-label="Show password" aria-pressed="false">Show</button>
+        </div>
+      </div>
+      <div style="height: 12px"></div>
+      <button id="loginButton" class="button primary" type="button">Login</button>
+      <div id="loginMessage" class="notice danger hidden" style="margin-top: 12px"></div>
+    </div>
+  </section>
+
+  <div id="app" class="app-shell hidden">
+    <header class="app-header">
+      <div class="header-inner">
+        <a class="brand-block" href="/">
+          <span class="brand-mark" aria-hidden="true">زب</span>
+          <div class="brand-text">
+            <p class="eyebrow">Counter Desk</p>
+            <h1 class="brand-title">زعفران بریانی</h1>
+            <p class="brand-subtitle">Checkout, open tables, and daily revenue</p>
+          </div>
+        </a>
+
+        <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="appNav" aria-label="د حساب انتخابونه">
+          <span></span><span></span><span></span>
+        </button>
+
+        <div class="header-end" id="appNav">
+          <div class="header-tools">
+            <span id="offlineBadge" class="status-chip warning">Checking</span>
+            <button id="logoutButton" class="tool-button" type="button">Logout</button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="page counter-dashboard-page">
+      <section class="stat-grid counter-stat-grid" aria-label="Counter stats">
+        <div class="stat counter-stat counter-stat--tables">
+          <div class="stat-label">Active tables</div>
+          <div id="statTables" class="stat-value">0</div>
+        </div>
+        <div class="stat counter-stat counter-stat--balance">
+          <div class="stat-label">Open balance</div>
+          <div id="statOpenTotal" class="stat-value">0 AFN</div>
+        </div>
+        <div class="stat counter-stat counter-stat--paid">
+          <div class="stat-label">Daily Revenue · ورځنی عاید</div>
+          <div id="statRevenue" class="stat-value">0 AFN</div>
+          <div id="statRevenueDetails" class="counter-stat-detail">عاید 0 · مصرف 0</div>
+        </div>
+        <div class="stat counter-stat counter-stat--status">
+          <div class="stat-label">Counter status</div>
+          <div id="connectionStatus" class="stat-value" style="font-size: 1.2rem">Connecting</div>
+        </div>
+      </section>
+
+      <div class="counter-menu-launcher">
+        <button id="toggleMenuManagerButton" class="button ghost" type="button" aria-expanded="false" aria-controls="counterMenuManager">
+          د مینیو مدیریت ښکاره کړه
+        </button>
+      </div>
+
+      <section id="counterMenuManager" class="panel counter-menu-manager hidden" aria-labelledby="counterMenuTitle">
+        <div class="panel-header">
+          <div>
+            <h2 id="counterMenuTitle" class="panel-title">د ټولې مینیو او نرخونو مدیریت</h2>
+            <p class="panel-kicker">ټولې کټګورۍ او خواړه دلته دي؛ هر نرخ بدل او سمدستي یې دایمي خوندي کړئ</p>
+          </div>
+          <div class="top-actions">
+            <span id="customMenuCount" class="chip">0 خواړه</span>
+            <button id="hideMenuManagerButton" class="button ghost" type="button">برخه پټه کړه</button>
+          </div>
+        </div>
+
+        <nav class="manager-command-nav" aria-label="د مدیریت برخې">
+          <button class="manager-command active" type="button" data-manager-view="menu"><span>☰</span><b>مینیو</b><small>خواړه او نرخونه</small></button>
+          <button class="manager-command" type="button" data-manager-view="account"><span>▦</span><b>میاشتنی حساب</b><small>هره ورځ جلا</small></button>
+          <button class="manager-command" type="button" data-manager-view="annual"><span>⌁</span><b>کلني حسابونه</b><small>هر کال جلا</small></button>
+          <button class="manager-command" type="button" data-manager-view="staff"><span>♟</span><b>کارمندان</b><small>معاش او کرایه</small></button>
+          <button class="manager-command" type="button" data-manager-view="expenses"><span>−</span><b>مصارف</b><small>ورځنی لګښت</small></button>
+          <button class="manager-command" type="button" data-manager-view="inventory"><span>▤</span><b>سټاک</b><small>داخل او پاتې</small></button>
+          <button class="manager-command" type="button" data-manager-view="capital"><span>◇</span><b>پانګه</b><small>دایمي شتمني</small></button>
+        </nav>
+        <div id="menuManagerMessage" class="notice hidden manager-global-notice"></div>
+
+        <div id="managerViewHeading" class="manager-view-heading">
+          <div><span id="managerViewEyebrow">MENU CONTROL</span><h3 id="managerViewTitle">د مینیو او نرخونو مدیریت</h3><p id="managerViewDescription">خواړه اضافه، نرخونه بدل او مینیو په اسانه ډول اداره کړئ.</p></div>
+        </div>
+
+        <div id="financeWorkspace" class="finance-workspace" dir="rtl">
+
+        <section class="monthly-account manager-view-panel hidden" data-manager-panel="account" aria-labelledby="monthlyAccountTitle">
+          <div class="monthly-account-head">
+            <div>
+              <span class="counter-expense-eyebrow">Monthly Account</span>
+              <h3 id="monthlyAccountTitle" class="finance-title"><span class="finance-icon blue" aria-hidden="true">▦</span> میاشتنی حساب</h3>
+              <p id="monthlyAccountPeriod">د Checkout خرڅلاو او مصارف دلته دایمي خوندي کېږي.</p>
+            </div>
+            <div class="finance-head-actions">
+              <label class="field">میاشت <input id="financeMonth" class="input" type="month" /></label>
+              <button id="refreshFinanceButton" class="button ghost" type="button">حساب تازه کړه</button>
+              <button id="deleteMonthlyAccountButton" class="button danger" type="button">میاشتنی حساب حذف کړه</button>
+            </div>
+          </div>
+          <div class="monthly-account-stats">
+            <div><span>ټول خرڅلاو</span><strong id="monthlySalesTotal">0 AFN</strong></div>
+            <div><span>ټول مصرف</span><strong id="monthlyExpenseTotal">0 AFN</strong></div>
+            <div><span>د خرڅ شویو اجناسو پېر</span><strong id="monthlyInventoryCost">0 AFN</strong></div>
+            <div><span>حقیقي خالصه ګټه</span><strong id="monthlyNetTotal">0 AFN</strong></div>
+            <div><span>خرڅ شوي توکي</span><strong id="monthlyUnitsTotal">0</strong></div>
+          </div>
+          <div>
+            <h4 class="monthly-items-title">د میاشتې ورځنی حساب</h4>
+            <div id="monthlyDayList" class="monthly-day-list"></div>
+          </div>
+          <div>
+            <h4 class="monthly-items-title">د هر جنس د خرڅلاو شمېر</h4>
+            <div id="monthlyItemList" class="monthly-item-list"></div>
+          </div>
+          <div>
+            <h4 class="monthly-items-title">د میاشتې مصارف</h4>
+            <div id="monthlyExpenseList" class="monthly-item-list"></div>
+          </div>
+        </section>
+
+        <section class="finance-center manager-view-panel hidden" data-manager-panel="annual" aria-labelledby="financeCenterTitle">
+          <div class="counter-expense-head">
+            <div><span class="counter-expense-eyebrow">Annual Finance</span><h3 id="financeCenterTitle" class="finance-title"><span class="finance-icon violet" aria-hidden="true">⌁</span> کلنی حساب او د مدیر خالصه ګټه</h3><p>خرڅلاو منفي ټول مصارف، معاشونه او کرایه.</p></div>
+            <div class="finance-year-actions">
+              <label class="field">کال <select id="financeYear" class="input"></select></label>
+              <button id="deleteAnnualAccountButton" class="button danger" type="button">د ټاکلي کال حساب حذف کړه</button>
+            </div>
+          </div>
+          <div class="monthly-account-stats">
+            <div><span>کلنی خرڅلاو</span><strong id="annualSalesTotal">0 AFN</strong></div>
+            <div><span>کلني مصارف</span><strong id="annualExpenseTotal">0 AFN</strong></div>
+            <div><span>د خرڅ شویو اجناسو پېر</span><strong id="annualInventoryCost">0 AFN</strong></div>
+            <div><span>د مدیر حقیقي ګټه</span><strong id="annualProfitTotal">0 AFN</strong></div>
+            <div><span>ثبت شوي کارمندان</span><strong id="employeeCount">0</strong></div>
+          </div>
+          <div id="annualMonthList" class="annual-month-list"></div>
+          <details class="annual-expense-ledger" open>
+            <summary>د ټاکلي کال د ټولو مصارفو تفصیل</summary>
+            <div id="annualExpenseCategorySummary" class="expense-category-summary"></div>
+            <div id="annualExpenseDetailList" class="annual-expense-detail-list"></div>
+          </details>
+        </section>
+
+        <section class="finance-grid manager-view-panel hidden" data-manager-panel="staff">
+          <div class="staff-financial-sync" aria-live="polite">
+            <div><span>د همدې میاشتې معاشونه</span><strong id="staffSalaryExpenseTotal">0 AFN</strong></div>
+            <div><span>د همدې میاشتې کرایه</span><strong id="staffRentExpenseTotal">0 AFN</strong></div>
+            <div><span>له ګټې ټول منفي شوي</span><strong id="staffCombinedExpenseTotal">0 AFN</strong></div>
+            <p id="staffSyncStatus">له MongoDB مالي حساب سره اتومات وصل</p>
+          </div>
+          <div class="finance-card">
+            <h3 class="finance-title"><span class="finance-icon cyan" aria-hidden="true">♟</span> کارمندان</h3>
+            <form id="employeeForm" class="finance-form">
+              <input id="employeeName" class="input" maxlength="100" placeholder="د کارمند نوم" required />
+              <input id="employeeRole" class="input" maxlength="100" placeholder="دنده، مثال: آشپز" required />
+              <input id="employeePhone" class="input" maxlength="30" placeholder="د ټیلیفون شمېره" />
+              <input id="employeeSalary" class="input" type="number" min="1" placeholder="میاشتنی معاش" required />
+              <button class="button success" type="submit">کارمند ثبت کړه</button>
+            </form>
+            <div id="employeeList" class="finance-list"></div>
+          </div>
+          <div class="finance-card">
+            <h3 class="finance-title"><span class="finance-icon green" aria-hidden="true">✓</span> د معاش رسید</h3>
+            <form id="payrollForm" class="finance-form">
+              <select id="payrollEmployee" class="select" required></select>
+              <input id="payrollPeriod" class="input" type="month" required />
+              <input id="payrollAmount" class="input" type="number" min="1" placeholder="ورکړل شوی معاش" required />
+              <input id="payrollNote" class="input" maxlength="200" placeholder="د معاش وجه" required />
+              <button class="button success" type="submit">معاش رسید کړه</button>
+            </form>
+            <div id="payrollList" class="finance-list"></div>
+          </div>
+          <div class="finance-card">
+            <h3 class="finance-title"><span class="finance-icon amber" aria-hidden="true">⌂</span> د دوکان کرایه</h3>
+            <form id="rentForm" class="finance-form">
+              <input id="rentShopName" class="input" maxlength="100" value="زعفران بریانی" placeholder="د دوکان نوم" required />
+              <input id="rentLandlord" class="input" maxlength="100" placeholder="د مالک نوم" required />
+              <input id="rentPeriod" class="input" type="month" required />
+              <input id="rentAmount" class="input" type="number" min="1" placeholder="د کرایې اندازه" required />
+              <input id="rentNote" class="input" maxlength="200" placeholder="د کرایې وجه (که تش وي اتومات جوړېږي)" />
+              <button class="button success" type="submit">کرایه رسید کړه</button>
+            </form>
+            <div id="rentList" class="finance-list"></div>
+          </div>
+        </section>
+
+        <section class="capital-assets finance-card manager-view-panel hidden" data-manager-panel="capital" aria-labelledby="capitalAssetsTitle">
+          <div class="capital-assets-head">
+            <div>
+              <span class="counter-expense-eyebrow">Separate Property Register</span>
+              <h3 id="capitalAssetsTitle" class="finance-title"><span class="finance-icon rose" aria-hidden="true">◇</span> پانګه او د رستورانت وسایل</h3>
+              <p>لګول شوې پانګه، TV، مېزونه او نور اجناس دلته ثبت کړئ. دا برخه د ګټې او مصرف له حساب څخه بشپړه جلا ده.</p>
+            </div>
+            <div class="capital-badge">په مالي حساب کې نه شمېرل کېږي</div>
+          </div>
+          <form id="capitalAssetForm" class="capital-asset-form">
+            <select id="capitalAssetType" class="select" required><option value="asset">جنس / وسیله</option><option value="capital">نغدي پانګه</option></select>
+            <input id="capitalAssetName" class="input" maxlength="100" placeholder="مثال: TV، مېزونه یا د مدیر پانګه" required />
+            <input id="capitalAssetQuantity" class="input" type="number" min="1" value="1" placeholder="تعداد" required />
+            <input id="capitalAssetAmount" class="input" type="number" min="0" placeholder="قیمت یا اندازه" required />
+            <input id="capitalAssetDate" class="input" type="date" required />
+            <input id="capitalAssetNote" class="input" maxlength="200" placeholder="یادښت (اختیاري)" />
+            <button class="button success" type="submit">جلا ثبت یې کړه</button>
+          </form>
+          <div class="capital-summary"><span>ټوله ثبت شوې پانګه او وسایل</span><strong id="capitalAssetsTotal">0 AFN</strong></div>
+          <div id="capitalAssetList" class="finance-list capital-list"></div>
+        </section>
+
+        <section class="inventory-manager finance-card manager-view-panel hidden" data-manager-panel="inventory" aria-labelledby="inventoryTitle">
+          <div class="capital-assets-head">
+            <div>
+              <span class="counter-expense-eyebrow">Live Inventory</span>
+              <h3 id="inventoryTitle" class="finance-title"><span class="finance-icon indigo" aria-hidden="true">▤</span> د مشروباتو ژوندی سټاک</h3>
+              <p>یوازې واړه او غټ بوتلونه؛ د هر Checkout پر وخت تعداد او مالي ارزښت په اوتومات ډول کمېږي.</p>
+            </div>
+            <div class="inventory-total-badge"><b id="inventoryItemCount">0</b><span>ثبت شوي اجناس</span></div>
+          </div>
+          <div class="inventory-value-summary">
+            <div><span>ټول پاتې بوتلونه</span><strong id="inventoryBottleTotal">0</strong></div>
+            <div><span>د پېر ټول ارزښت</span><strong id="inventoryCostValue">0 AFN</strong></div>
+            <div><span>د پلور ټول ارزښت</span><strong id="inventoryRetailValue">0 AFN</strong></div>
+            <div><span>اټکلي ګټه</span><strong id="inventoryPotentialProfit">0 AFN</strong></div>
+          </div>
+          <form id="inventoryReceiveForm" class="inventory-form">
+            <label class="field"><span>واړه یا غټ مشروب</span><select id="inventoryMenuItem" class="select" required></select></label>
+            <label class="field"><span>داخل شوی تعداد</span><input id="inventoryQuantity" class="input" type="number" min="1" placeholder="مثال: 20" required /></label>
+            <label class="field"><span>واحد</span><select id="inventoryUnit" class="select" required><option>بوتل</option><option>دانه</option><option>کارتن</option><option>درجن</option></select></label>
+            <label class="field"><span>د یو واحد پېر قیمت</span><input id="inventoryPurchasePrice" class="input" type="number" min="0" placeholder="مثال: 50" required /></label>
+            <label class="field"><span>ټول راوړلو قیمت</span><input id="inventoryPurchaseTotal" class="input" type="text" value="0 AFN" readonly /></label>
+            <label class="field"><span>د یو واحد خرڅ قیمت</span><input id="inventorySalePrice" class="input" type="number" min="0" placeholder="مثال: 80" required /></label>
+            <label class="field"><span>د خبرتیا حد</span><input id="inventoryReorderLevel" class="input" type="number" min="0" value="5" required /></label>
+            <label class="field"><span>یادښت</span><input id="inventoryNote" class="input" maxlength="200" placeholder="اختیاري" /></label>
+            <button class="button success" type="submit">سټاک ته داخل کړه</button>
+          </form>
+          <div id="inventoryStockGrid" class="inventory-stock-grid"></div>
+          <details class="inventory-movements">
+            <summary>د داخل او وتلو وروستۍ تاریخچه</summary>
+            <div id="inventoryMovementList" class="finance-list"></div>
+          </details>
+        </section>
+
+        <section class="counter-expense-manager manager-view-panel hidden" data-manager-panel="expenses" aria-labelledby="expenseManagerTitle">
+          <div class="counter-expense-head">
+            <div>
+              <span class="counter-expense-eyebrow">Daily Expenses</span>
+              <h3 id="expenseManagerTitle" class="finance-title"><span class="finance-icon red" aria-hidden="true">−</span> د ورځني مصرف مدیریت</h3>
+              <p>دلته یوازې عادي ورځني مصارف ثبتېږي؛ معاش او کرایه په خپل جلا حساب کې دي.</p>
+            </div>
+            <div class="counter-expense-total">
+              <span>د نن عادي مصرف</span>
+              <strong id="todayExpenseTotal">0 AFN</strong>
+              <button id="deleteAllExpensesButton" class="button danger" type="button">ورځنی لست پاک کړه</button>
+            </div>
+          </div>
+          <form id="expenseForm" class="counter-expense-form">
+            <div class="field">
+              <label for="expenseName">د مصرف نوم</label>
+              <input id="expenseName" class="input" type="text" maxlength="100" placeholder="مثال: مستې، سبزي یا ترانسپورټ" required />
+            </div>
+            <div class="field">
+              <label for="expenseCategory">د مصرف کټګوري</label>
+              <select id="expenseCategory" class="select" required>
+                <option value="ingredients">خوراکي مواد / اجناس</option>
+                <option value="transport">ترانسپورټ</option>
+                <option value="utilities">برېښنا، اوبه او خدمات</option>
+                <option value="maintenance">ترمیم او ساتنه</option>
+                <option value="general">نور مصرف</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="expenseAmount">اندازه په افغانۍ</label>
+              <input id="expenseAmount" class="input" type="number" min="1" max="10000000" step="1" inputmode="numeric" placeholder="500" required />
+            </div>
+            <div class="field">
+              <label for="expenseNote">د مصرف وجه / وضاحت (اختیاري)</label>
+              <input id="expenseNote" class="input" type="text" maxlength="200" placeholder="که تش وي، سیستم یې پخپله جوړوي" />
+            </div>
+            <button id="saveExpenseButton" class="button success" type="submit">نوی مصرف ثبت کړه</button>
+          </form>
+          <div id="expenseList" class="counter-expense-list"></div>
+        </section>
+        </div>
+
+        <div class="manager-view-panel menu-catalog-panel" data-manager-panel="menu">
+        <form id="counterMenuForm" class="counter-menu-form">
+          <div class="field">
+            <label for="menuGroupId">کټګوري / برخه</label>
+            <select id="menuGroupId" class="select" required></select>
+            <small id="menuCategoryHint" class="field-hint"></small>
+          </div>
+          <div class="field">
+            <label for="newMenuName">د خوراک نوم</label>
+            <input id="newMenuName" class="input" type="text" maxlength="100" placeholder="مثال: سپیشل چکن برګر" required />
+          </div>
+          <div class="field">
+            <label for="newMenuPrice">قیمت په افغانۍ</label>
+            <input id="newMenuPrice" class="input" type="number" min="1" max="1000000" step="1" inputmode="numeric" placeholder="150" required />
+          </div>
+          <button id="saveMenuItemButton" class="button success" type="submit">ذخیره کول</button>
+        </form>
+        <div class="counter-menu-search" role="search">
+          <label for="menuSearch">په مینیو کې ژر لټون</label>
+          <div class="counter-menu-search-bar">
+            <span class="counter-menu-search-icon" aria-hidden="true">⌕</span>
+            <input id="menuSearch" class="input" type="search" autocomplete="off" placeholder="د خوراک نوم، کټګوري یا قیمت ولیکئ…" />
+            <button id="clearMenuSearch" class="button ghost hidden" type="button">پاکول</button>
+          </div>
+          <small id="menuSearchResult" class="field-hint">ټول توکي ښودل کېږي</small>
+        </div>
+        <div id="counterCustomMenuItems" class="counter-custom-menu-list"></div>
+        </div>
+      </section>
+
+      <div class="dashboard-grid counter-live-grid">
+        <section class="panel span-7 counter-live-panel counter-tables-panel">
+          <div class="panel-header">
+            <div>
+              <h2 class="panel-title">Open Tables</h2>
+              <p class="panel-kicker">فعال میزونه</p>
+            </div>
+            <span id="openTicketCount" class="chip">0 tickets</span>
+          </div>
+          <div id="activeTables" class="orders-list"></div>
+        </section>
+
+        <div class="span-5 side-stack">
+          <aside class="panel counter-live-panel counter-history-panel">
+            <div class="panel-header">
+              <div>
+                <h2 class="panel-title">Sales History</h2>
+                <p class="panel-kicker">د خرڅلاو تاریخچه</p>
+              </div>
+              <div class="top-actions">
+                <button id="printButton" class="button ghost" type="button">Print</button>
+                <button id="clearHistoryButton" class="button danger" type="button">ورځ پای / Clear</button>
+              </div>
+            </div>
+            <div id="historyList" class="history-list"></div>
+            <section id="salesProductSummary" class="sales-product-summary hidden" dir="rtl" aria-labelledby="salesProductSummaryTitle"></section>
+          </aside>
+        </div>
+      </div>
+
+      <div id="toast" class="notice hidden" style="margin-top: 16px"></div>
+    </main>
+  </div>
+
+  <section id="receiptPrint" class="receipt-print" aria-hidden="true"></section>
+
+  <script src="/header-nav.js"></script>
+  <script src="/offline.js"></script>
+  <script>
+    const PAGE_ROLE = 'counter';
+    const RECEIPT_PAGE_WIDTH_MM = 80;
+    // Keep only a very small cutter allowance. A larger allowance is visible as
+    // unnecessary blank paper on 80 mm continuous-roll printers.
+    const RECEIPT_HEIGHT_SAFETY_MM = 1;
+    const PRINT_LOG_KEY = 'kandahar_kitchen_print_log';
+    const PRINT_COUNTER_KEY = 'kandahar_kitchen_print_counter';
+    const MANAGER_VIEW_KEY = 'zaffran_manager_last_view';
+    const RECEIPT_CONFIG = {
+      phone: '+93705384148'
+    };
+    const state = {
+      socket: null,
+      calendarPeriod: '',
+      snapshot: { activeOrders: [], orderHistory: [], expenses: [], stats: {}, totalRevenue: 0 },
+      lastCheckoutBill: null,
+      printLog: loadPrintLog(),
+      finance: { employees: [], payroll: [], rents: [], capitalAssets: [], inventory: [], inventoryMovements: [], annualAccount: null },
+      orderAlertAudio: null,
+      alertedOrderIds: new Set(),
+      printInProgress: false
+    };
+    const menuGroups = window.AsadBurgerKingMenuGroups || [];
+    const MENU_MANAGER_PASSWORD = 'zapran123@';
+    const menuFilterNames = {
+      food: 'خواړه',
+      deals: 'ډیلونه',
+      drinks: 'مشروبات',
+      tea: 'چای او کافي',
+      dessert: 'شیریني او آیسکریم'
+    };
+    const expenseCategoryNames = {
+      ingredients: 'خوراکي مواد / اجناس',
+      transport: 'ترانسپورټ',
+      utilities: 'برېښنا، اوبه او خدمات',
+      maintenance: 'ترمیم او ساتنه',
+      general: 'نور مصرف',
+      salary: 'معاش',
+      rent: 'کرایه'
+    };
+
+    function localDateKey(date = new Date()) {
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    }
+
+    function localMonthKey(date = new Date()) {
+      return localDateKey(date).slice(0, 7);
+    }
+
+    async function checkCalendarRollover() {
+      const nextPeriod = localMonthKey();
+      if (!state.calendarPeriod || state.calendarPeriod === nextPeriod) return;
+      state.calendarPeriod = nextPeriod;
+      $('financeMonth').value = nextPeriod;
+      $('payrollPeriod').value = nextPeriod;
+      $('rentPeriod').value = nextPeriod;
+      if (!$('counterMenuManager').classList.contains('hidden')) await loadFinance();
+      showToast(`${nextPeriod} نوې میاشت پیل شوه؛ نوی ورځنی او میاشتنی حساب فعال شو.`, 'success');
+    }
+
+    const $ = (id) => document.getElementById(id);
+    const money = (value) => `${Math.round(Number(value) || 0).toLocaleString()} AFN`;
+    const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#039;'
+    }[char]));
+
+    function fillMenuCategories() {
+      const categories = menuGroups.reduce((result, group) => {
+        (result[group.filter] ||= []).push(group);
+        return result;
+      }, {});
+      $('menuGroupId').innerHTML = Object.entries(categories).map(([filter, groups]) => `
+        <optgroup label="${escapeHtml(menuFilterNames[filter] || filter)}">
+          ${groups.map((group) => `<option value="${escapeHtml(group.id)}">${escapeHtml(group.localName)} — ${escapeHtml(group.name)}</option>`).join('')}
+        </optgroup>
+      `).join('');
+      updateMenuCategoryHint();
+    }
+
+    function updateMenuCategoryHint() {
+      const group = menuGroups.find((item) => item.id === $('menuGroupId').value);
+      $('menuCategoryHint').textContent = group
+        ? `نوی خوراک به د «${group.localName}» په برخه کې ښکاره شي.`
+        : '';
+    }
+
+    function showMenuManagerMessage(message, type = 'success') {
+      const notice = $('menuManagerMessage');
+      notice.textContent = message;
+      notice.className = `notice ${type === 'danger' ? 'danger' : 'success'}`;
+    }
+
+    function setMenuManagerVisible(visible) {
+      const manager = $('counterMenuManager');
+      manager.classList.toggle('hidden', !visible);
+      $('toggleMenuManagerButton').setAttribute('aria-expanded', String(visible));
+      $('toggleMenuManagerButton').textContent = visible
+        ? 'د مینیو مدیریت پټ کړه'
+        : 'د مینیو مدیریت ښکاره کړه';
+      if (visible) showManagerView(localStorage.getItem(MANAGER_VIEW_KEY) || 'menu').catch(() => {});
+    }
+
+    const managerViewCopy = {
+      menu: ['MENU CONTROL', 'د مینیو او نرخونو مدیریت', 'خواړه اضافه، نرخونه بدل او مینیو په اسانه ډول اداره کړئ.'],
+      account: ['FINANCIAL OVERVIEW', 'میاشتنی او کلنی حساب', 'خرڅلاو، ټول مصارف او د مدیر حقیقي ګټه په یوه راپور کې.'],
+      annual: ['ANNUAL ARCHIVE', 'کلني حسابونه', 'هر بشپړ او روان کال د مدیر لپاره دلته جلا خوندي او د کتلو وړ دی.'],
+      staff: ['PEOPLE & PAYMENTS', 'کارمندان، معاشونه او کرایه', 'کارمندان ثبت او د معاش او دوکان کرایې رسیدونه اداره کړئ.'],
+      expenses: ['EXPENSE LEDGER', 'د ورځني مصرف مدیریت', 'هر مصرف له کټګورۍ، وجه، نېټې او اندازې سره ثبت کړئ.'],
+      inventory: ['LIVE INVENTORY', 'د سټاک او اجناسو مدیریت', 'داخل، وتلي او پاتې اجناس او د هر واحد حقیقي ګټه وګورئ.'],
+      capital: ['PROPERTY REGISTER', 'پانګه او د رستورانت وسایل', 'دایمي پانګه او وسایل ثبت کړئ؛ تر لاسي حذف پورې په MongoDB کې خوندي پاتې کېږي.']
+    };
+
+    async function showManagerView(view) {
+      const selected = managerViewCopy[view] ? view : 'menu';
+      localStorage.setItem(MANAGER_VIEW_KEY, selected);
+      document.querySelectorAll('[data-manager-view]').forEach((button) => button.classList.toggle('active', button.dataset.managerView === selected));
+      document.querySelectorAll('[data-manager-panel]').forEach((panel) => panel.classList.toggle('hidden', panel.dataset.managerPanel !== selected));
+      const copy = managerViewCopy[selected];
+      $('managerViewEyebrow').textContent = copy[0];
+      $('managerViewTitle').textContent = copy[1];
+      $('managerViewDescription').textContent = copy[2];
+      if (selected !== 'menu') await loadFinance();
+    }
+
+    async function menuManagerRequest(url, options = {}) {
+      const response = await fetch(url, {
+        ...options,
+        cache: 'no-store',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-manager-password': MENU_MANAGER_PASSWORD,
+          ...(options.headers || {})
+        }
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.message || 'عملیات ناکام شول.');
+      return data;
+    }
+
+    function allMenuItems() {
+      return menuGroups.flatMap((group) => (group.sections || []).flatMap((section) =>
+        (section.variants || []).flatMap((item) => {
+          if (!Array.isArray(item.priceOptions) || !item.priceOptions.length) {
+            return [{ item, group, section }];
+          }
+          return item.priceOptions.map((price, optionIndex) => ({
+            item: {
+              ...item,
+              id: `${item.id}-option-${optionIndex}`,
+              deleteId: item.id,
+              label: `${item.label} — ${optionIndex + 1}`,
+              price
+            },
+            group,
+            section
+          }));
+        })
+      ));
+    }
+
+    function fillInventoryMenuItems() {
+      const items = allMenuItems().filter(({ group }) => ['large-bottles', 'small-bottles'].includes(group.id));
+      $('inventoryMenuItem').innerHTML = '<option value="">جنس انتخاب کړئ</option>' + items.map(({ item, group }) => {
+        const name = displayItemName(item.label || item.name || item.id);
+        return `<option value="${escapeHtml(item.id)}" data-group-id="${escapeHtml(group.id)}" data-name="${escapeHtml(name)}" data-price="${Number(item.price) || 0}">${escapeHtml(name)} — ${escapeHtml(group.localName || group.name)}</option>`;
+      }).join('');
+    }
+
+    function renderAllMenuItems() {
+      const query = $('menuSearch').value.trim().toLocaleLowerCase();
+      const items = allMenuItems();
+      const visible = items.filter(({ item, group, section }) =>
+        [item.label, item.labelEn, item.size, item.price, group.localName, group.name, section.titleLocal, section.title]
+          .filter(Boolean).join(' ').toLocaleLowerCase().includes(query)
+      );
+      $('customMenuCount').textContent = `${items.length} خواړه`;
+      $('clearMenuSearch').classList.toggle('hidden', !query);
+      $('menuSearchResult').textContent = query
+        ? `${visible.length} توکي پیدا شول`
+        : `ټول ${items.length} توکي ښودل کېږي`;
+      $('counterCustomMenuItems').innerHTML = visible.length ? visible.map(({ item, group, section }) => `
+        <article class="counter-custom-menu-item" data-menu-row="${escapeHtml(item.id)}">
+          <div class="counter-menu-item-name">
+            <strong dir="rtl">${escapeHtml(item.label)}${item.size ? ` — ${escapeHtml(item.size)}` : ''}</strong>
+            <span>${escapeHtml(group.localName)} · ${escapeHtml(section.titleLocal || section.title || '')}</span>
+          </div>
+          <div class="counter-menu-price-editor">
+            <input class="input" type="number" min="1" max="1000000" step="1" value="${Number(item.price) || 0}" aria-label="د ${escapeHtml(item.label)} نرخ" data-menu-price="${escapeHtml(item.id)}" />
+            <span>AFN</span>
+            <button class="button success" type="button" data-save-menu-price="${escapeHtml(item.id)}">نرخ خوندي کړه</button>
+            <button class="button danger" type="button" data-delete-menu-item="${escapeHtml(item.deleteId || item.id)}">حذف</button>
+          </div>
+        </article>`).join('') : '<div class="empty-state compact">ستاسې د لټون مطابق خوراک پیدا نه شو.</div>';
+    }
+
+    async function loadCounterCustomMenu() {
+      try {
+        const data = await menuManagerRequest('/api/menu/prices');
+        (data.customItems || []).forEach((item) => {
+          window.AsadBurgerKingApplyMenuUpdate?.({ action: 'added', item });
+        });
+        Object.entries(data.prices || {}).forEach(([itemId, price]) => {
+          window.AsadBurgerKingApplyMenuUpdate?.({ action: 'price_updated', itemId, price });
+        });
+        (data.deletedItemIds || []).forEach((itemId) => {
+          window.AsadBurgerKingApplyMenuUpdate?.({ action: 'deleted', itemId });
+        });
+        renderAllMenuItems();
+        fillInventoryMenuItems();
+      } catch (error) {
+        showMenuManagerMessage(error.message, 'danger');
+      }
+    }
+
+    async function saveMenuPrice(itemId, button) {
+      const input = document.querySelector(`[data-menu-price="${CSS.escape(itemId)}"]`);
+      button.disabled = true;
+      try {
+        const data = await menuManagerRequest(`/api/menu/prices/${encodeURIComponent(itemId)}`, {
+          method: 'PUT', body: JSON.stringify({ price: Number(input.value) })
+        });
+        window.AsadBurgerKingApplyMenuUpdate?.(data);
+        input.value = data.price;
+        showMenuManagerMessage('نرخ دایمي خوندي شو او په ټول سیستم کې سمدستي بدل شو.');
+      } catch (error) {
+        showMenuManagerMessage(error.message, 'danger');
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    async function saveNewMenuItem(event) {
+      event.preventDefault();
+      const button = $('saveMenuItemButton');
+      button.disabled = true;
+      try {
+        const data = await menuManagerRequest('/api/menu/custom', {
+          method: 'POST',
+          body: JSON.stringify({
+            groupId: $('menuGroupId').value,
+            name: $('newMenuName').value.trim(),
+            price: Number($('newMenuPrice').value)
+          })
+        });
+        window.AsadBurgerKingApplyMenuUpdate?.({ action: 'added', item: data.item });
+        $('newMenuName').value = '';
+        $('newMenuPrice').value = '';
+        showMenuManagerMessage('نوی خوراک دایمي ذخیره او خپلې کټګورۍ ته اضافه شو.');
+        await loadCounterCustomMenu();
+      } catch (error) {
+        showMenuManagerMessage(error.message, 'danger');
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    async function deleteCounterMenuItem(itemId) {
+      if (!confirm('دا خوراک له مینیو څخه حذف شي؟')) return;
+      try {
+        const data = await menuManagerRequest(`/api/menu/custom/${encodeURIComponent(itemId)}`, { method: 'DELETE' });
+        window.AsadBurgerKingApplyMenuUpdate?.(data);
+        showMenuManagerMessage('خوراک له مینیو څخه حذف شو.');
+        await loadCounterCustomMenu();
+      } catch (error) {
+        showMenuManagerMessage(error.message, 'danger');
+      }
+    }
+
+    function displayItemName(value) {
+      let text = String(value ?? '').trim();
+      if (!text) return '';
+
+      if (text.includes('·')) {
+        const parts = text.split('·').map((part) => part.trim()).filter(Boolean);
+        if (parts.length > 2) {
+          text = parts.slice(2).join(' ');
+        } else {
+          text = parts.join(' ');
+        }
+      }
+
+      if (text.includes('/')) {
+        const parts = text.split('/').map((part) => part.trim()).filter(Boolean);
+        if (parts.length > 1) {
+          text = parts[0];
+        }
+      }
+
+      const platterSuffixMatch = text.match(/^نفري\s*-\s*(.+?)\s*([۰-۹٠-٩0-9]+)$/);
+      const platterPrefixMatch = text.match(/^([۰-۹٠-٩0-9]+)\s*نفري\s*-\s*(.+)$/);
+      if (platterSuffixMatch) {
+        text = `${platterSuffixMatch[1]} ${platterSuffixMatch[2]} نفری`;
+      } else if (platterPrefixMatch) {
+        text = `${platterPrefixMatch[2]} ${platterPrefixMatch[1]} نفری`;
+      }
+
+      return text.replace(/\s+/g, ' ').trim();
+    }
+
+    function checkPassword() {
+      const role = window.KandaharAuth.loginWithPassword($('counterPassword').value);
+      if (!role) {
+        $('loginMessage').textContent = 'Incorrect password';
+        $('loginMessage').classList.remove('hidden');
+        return;
+      }
+
+      if (role.key !== PAGE_ROLE) {
+        window.KandaharAuth.redirectToRole(role.key);
+        return;
+      }
+
+      window.KandaharAuth.showLoginIntro(role, unlockPage);
+    }
+
+    function unlockPage() {
+      $('loginScreen').classList.add('hidden');
+      $('app').classList.remove('hidden');
+      startApp();
+    }
+
+    async function enableOrderAlertSound() {
+      if (!state.orderAlertAudio) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) return null;
+        state.orderAlertAudio = new AudioContextClass();
+      }
+      if (state.orderAlertAudio.state === 'suspended') {
+        await state.orderAlertAudio.resume().catch(() => {});
+      }
+      return state.orderAlertAudio;
+    }
+
+    async function unlockOrderAlertOnInteraction() {
+      const audio = await enableOrderAlertSound();
+      if (!audio || audio.state !== 'running') return;
+      document.removeEventListener('pointerdown', unlockOrderAlertOnInteraction);
+      document.removeEventListener('click', unlockOrderAlertOnInteraction);
+      document.removeEventListener('keydown', unlockOrderAlertOnInteraction);
+    }
+
+    async function playNewOrderAlert() {
+      const audio = await enableOrderAlertSound();
+      if (!audio || audio.state !== 'running') return false;
+
+      const startAt = audio.currentTime + 0.03;
+      const alertPattern = [
+        [0, 880],
+        [0.24, 1046],
+        [0.48, 880],
+        [0.9, 1046],
+        [1.14, 1318]
+      ];
+      alertPattern.forEach(([delay, frequency]) => {
+        const oscillator = audio.createOscillator();
+        const gain = audio.createGain();
+        oscillator.type = 'square';
+        oscillator.frequency.setValueAtTime(frequency, startAt + delay);
+        gain.gain.setValueAtTime(0.0001, startAt + delay);
+        gain.gain.exponentialRampToValueAtTime(0.32, startAt + delay + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, startAt + delay + 0.18);
+        oscillator.connect(gain);
+        gain.connect(audio.destination);
+        oscillator.start(startAt + delay);
+        oscillator.stop(startAt + delay + 0.2);
+      });
+      await new Promise((resolve) => setTimeout(resolve, 1450));
+      return true;
+    }
+
+    function checkExistingLogin() {
+      const roleKey = window.KandaharAuth.currentRole();
+      if (!roleKey) return;
+      if (roleKey !== PAGE_ROLE) {
+        window.KandaharAuth.redirectToRole(roleKey);
+        return;
+      }
+      unlockPage();
+    }
+
+    function startApp() {
+      if (state.socket) return;
+      render();
+
+      state.socket = io({ transports: ['websocket', 'polling'] });
+      state.socket.on('connect', () => {
+        $('connectionStatus').textContent = 'Live';
+        state.socket.emit('request_snapshot');
+      });
+      state.socket.on('disconnect', () => {
+        $('connectionStatus').textContent = 'Offline';
+      });
+      state.socket.on('snapshot', (snapshot) => {
+        state.snapshot = snapshot || state.snapshot;
+        render();
+      });
+      state.socket.on('active_orders', (orders) => {
+        replaceActiveOrders(orders);
+      });
+      state.socket.on('display_order_in_counter', (order) => {
+        upsertActiveOrder(order);
+      });
+      const handleIncomingOrder = (order) => {
+        if (!order?.id || state.alertedOrderIds.has(order.id)) return;
+        state.alertedOrderIds.add(order.id);
+        playNewOrderAlert();
+        upsertActiveOrder(order);
+        const orderLabel = order?.orderNumber || order?.tableNumber || '';
+        showToast(
+          `نوی آرډر راغی${orderLabel ? ` · ${orderLabel}` : ''} — د چاپ لپاره د آرډر پرینټ تڼۍ ووهئ`,
+          'success'
+        );
+      };
+      state.socket.on('order_created', handleIncomingOrder);
+      state.socket.on('new_order', handleIncomingOrder);
+      state.socket.on('system_theme_updated', (theme) => {
+        window.PizzaPointApplySystemTheme?.(theme);
+      });
+      state.socket.on('expenses_updated', (expenses) => {
+        state.snapshot = { ...state.snapshot, expenses: Array.isArray(expenses) ? expenses : [] };
+        renderStats();
+        renderExpenses();
+      });
+      state.socket.on('monthly_account_updated', (monthlyAccount) => {
+        state.snapshot = { ...state.snapshot, monthlyAccount };
+        renderMonthlyAccount();
+      });
+      state.socket.on('financial_accounts_updated', (accounts) => {
+        applyFinancialAccounts(accounts);
+      });
+      state.socket.on('employees_updated', (employees) => {
+        state.finance = { ...state.finance, employees: Array.isArray(employees) ? employees : [] };
+        renderFinance();
+      });
+      state.socket.on('payroll_updated', (payroll) => {
+        state.finance = { ...state.finance, payroll: Array.isArray(payroll) ? payroll : [] };
+        renderFinance();
+      });
+      state.socket.on('rents_updated', (rents) => {
+        state.finance = { ...state.finance, rents: Array.isArray(rents) ? rents : [] };
+        renderFinance();
+      });
+      state.socket.on('inventory_updated', (inventory) => {
+        state.finance = { ...state.finance, inventory: Array.isArray(inventory) ? inventory : [] };
+        renderFinance();
+      });
+      state.socket.on('inventory_movements_updated', (inventoryMovements) => {
+        state.finance = { ...state.finance, inventoryMovements: Array.isArray(inventoryMovements) ? inventoryMovements : [] };
+        renderFinance();
+      });
+      state.socket.on('order_updated_notification', (data) => {
+        playNewOrderAlert();
+        applyOrderUpdate(data);
+        const tableLabel = data?.tableNumber || data?.table || '';
+        showToast(`د Table ${tableLabel} آرډر تغیر شو — نوې پارچه پرینټ کړئ`, 'success');
+      });
+      state.socket.on('app_error', (error) => showToast(error.message || 'Server error', 'danger'));
+    }
+
+    function render() {
+      renderStats();
+      renderActiveTables();
+      renderHistory();
+      renderExpenses();
+      renderMonthlyAccount();
+    }
+
+    function applyFinancialAccounts(accounts) {
+      if (!accounts) return;
+      state.snapshot = {
+        ...state.snapshot,
+        expenses: Array.isArray(accounts.expenses) ? accounts.expenses : state.snapshot.expenses,
+        monthlyAccount: accounts.monthlyAccount || state.snapshot.monthlyAccount
+      };
+      const selectedYear = Number($('financeYear').value) || new Date().getFullYear();
+      state.finance = {
+        ...state.finance,
+        ...(Array.isArray(accounts.employees) ? { employees: accounts.employees } : {}),
+        ...(Array.isArray(accounts.payroll) ? { payroll: accounts.payroll } : {}),
+        ...(Array.isArray(accounts.rents) ? { rents: accounts.rents } : {}),
+        ...(Array.isArray(accounts.inventory) ? { inventory: accounts.inventory } : {}),
+        ...(Array.isArray(accounts.inventoryMovements) ? { inventoryMovements: accounts.inventoryMovements } : {}),
+        ...(Number(accounts.annualAccount?.year) === selectedYear ? { annualAccount: accounts.annualAccount } : {})
+      };
+      renderStats();
+      renderExpenses();
+      renderMonthlyAccount();
+      renderFinance();
+    }
+
+    function renderMonthlyAccount() {
+      const account = state.snapshot.monthlyAccount || { items: {}, expenses: [] };
+      const expenses = Array.isArray(account.expenses) ? account.expenses : [];
+      const salesTotal = Number(account.salesTotal) || 0;
+      const expenseTotal = Number(account.expensesTotal) || 0;
+      const inventoryCostTotal = Number(account.inventoryCostTotal) || 0;
+      const items = Object.values(account.items || {}).sort((a, b) => (Number(b.quantity) || 0) - (Number(a.quantity) || 0));
+      const unitTotal = Number(account.unitsTotal) || items.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0);
+      const weekDays = ['یکشنبه', 'دوشنبه', 'سه شنبه', 'چهارشنبه', 'پنجشنبه', 'جمعه', 'شنبه'];
+
+      $('monthlySalesTotal').textContent = money(salesTotal);
+      $('monthlyExpenseTotal').textContent = money(expenseTotal);
+      $('monthlyInventoryCost').textContent = money(inventoryCostTotal);
+      $('monthlyNetTotal').textContent = money(account.exactProfit ?? (salesTotal - expenseTotal - inventoryCostTotal));
+      $('monthlyNetTotal').classList.toggle('is-negative', Number(account.exactProfit ?? (salesTotal - expenseTotal - inventoryCostTotal)) < 0);
+      $('monthlyUnitsTotal').textContent = Math.round(unitTotal).toLocaleString();
+      $('monthlyDayList').innerHTML = (account.days || []).map((day) => {
+        const date = new Date(`${day.date}T12:00:00`);
+        return `<div class="monthly-day-row"><span><b>${weekDays[date.getDay()]}</b><small>${escapeHtml(day.date)}</small></span><span>کار/خرڅ: <b>${money(day.sales)}</b></span><span>مصرف: <b>${money(day.expenses)}</b></span><span>د اجناسو پېر: <b>${money(day.inventoryCost)}</b></span><strong class="${Number(day.profit) < 0 ? 'is-negative' : ''}">خالصه ګټه: ${money(day.profit)}</strong></div>`;
+      }).join('') || '<div class="empty-state compact">د دې میاشتې ورځنی حساب نشته.</div>';
+      const startedAt = new Date(account.startedAt);
+      $('monthlyAccountPeriod').textContent = Number.isNaN(startedAt.getTime())
+        ? 'د Checkout خرڅلاو او مصارف دلته دایمي خوندي کېږي.'
+        : `حساب له ${startedAt.toLocaleDateString()} څخه تر اوسه`;
+      $('monthlyItemList').innerHTML = items.length ? items.map((item) => `
+        <div class="monthly-item-row"><strong>${escapeHtml(displayItemName(item.name))}</strong><span>${escapeHtml(Math.round(Number(item.quantity) || 0))} دانې خرڅ</span><b>${money(item.revenue)}</b></div>
+      `).join('') : '<div class="empty-state compact">تر اوسه هېڅ جنس نه دی خرڅ شوی.</div>';
+      $('monthlyExpenseList').innerHTML = expenses.length ? expenses.map((expense) => `
+        <div class="monthly-item-row"><strong>${escapeHtml(expense.name)}<small class="expense-reason">وجه: ${escapeHtml(expense.note || expenseCategoryNames[expense.category] || 'نه ده ثبت شوې')}</small></strong><span>${escapeHtml(expenseCategoryNames[expense.category] || 'مصرف')} · ${escapeHtml(expense.period || new Date(expense.createdAt).toLocaleDateString())}</span><b>${money(expense.amount)}</b></div>
+      `).join('') : '<div class="empty-state compact">تر اوسه مصرف نشته.</div>';
+    }
+
+    async function loadFinance() {
+      try {
+        const year = Number($('financeYear').value) || new Date().getFullYear();
+        const month = $('financeMonth').value || new Date().toISOString().slice(0, 7);
+        const data = await menuManagerRequest(`/api/finance?year=${year}&month=${encodeURIComponent(month)}`);
+        const years = Array.isArray(data.financialYears) ? data.financialYears : [year];
+        const selectedYear = Number(data.annualAccount?.year) || year;
+        $('financeYear').innerHTML = years.map((item) => `<option value="${item}">${item} کال</option>`).join('');
+        $('financeYear').value = String(selectedYear);
+        state.finance = data;
+        state.snapshot.expenses = data.expenses || state.snapshot.expenses;
+        state.snapshot.monthlyAccount = data.monthlyAccount;
+        renderMonthlyAccount();
+        renderFinance();
+      } catch (error) { showMenuManagerMessage(error.message, 'danger'); }
+    }
+
+    function renderFinance() {
+      const data = state.finance || {};
+      const annual = data.annualAccount || { months: [] };
+      const employees = data.employees || [];
+      const selectedPayrollEmployee = $('payrollEmployee').value;
+      const currentExpenses = Array.isArray(state.snapshot.monthlyAccount?.expenses) ? state.snapshot.monthlyAccount.expenses : [];
+      const salaryTotal = currentExpenses.filter((expense) => expense.category === 'salary').reduce((sum, expense) => sum + (Number(expense.amount) || 0), 0);
+      const rentTotal = currentExpenses.filter((expense) => expense.category === 'rent').reduce((sum, expense) => sum + (Number(expense.amount) || 0), 0);
+      $('staffSalaryExpenseTotal').textContent = money(salaryTotal);
+      $('staffRentExpenseTotal').textContent = money(rentTotal);
+      $('staffCombinedExpenseTotal').textContent = money(salaryTotal + rentTotal);
+      $('staffSyncStatus').textContent = `${state.snapshot.monthlyAccount?.period || new Date().toISOString().slice(0, 7)} · په MongoDB، میاشتني او کلني حساب کې شامل`;
+      $('annualSalesTotal').textContent = money(annual.salesTotal);
+      $('annualExpenseTotal').textContent = money(annual.expensesTotal);
+      $('annualInventoryCost').textContent = money(annual.inventoryCostTotal);
+      $('annualProfitTotal').textContent = money(annual.profit);
+      $('annualProfitTotal').classList.toggle('is-negative', Number(annual.profit) < 0);
+      $('employeeCount').textContent = employees.length;
+      $('annualMonthList').innerHTML = (annual.months || []).map((month) => `<div><span>${escapeHtml(month.period)}</span><b>خرڅ: ${money(month.sales)}</b><em>مصرف: ${money(month.expenses)}</em><i>د اجناسو پېر: ${money(month.inventoryCost)}</i><strong>ګټه: ${money(month.profit)}</strong></div>`).join('');
+      const categoryEntries = Object.entries(annual.expensesByCategory || {}).sort((a, b) => Number(b[1]) - Number(a[1]));
+      $('annualExpenseCategorySummary').innerHTML = categoryEntries.map(([category, amount]) => `<div><span>${escapeHtml(expenseCategoryNames[category] || 'نور مصرف')}</span><strong>${money(amount)}</strong></div>`).join('') || '<div class="empty-state compact">په دې کال کې مصرف نشته.</div>';
+      const annualExpenses = annual.expenseDetails || [];
+      $('annualExpenseDetailList').innerHTML = annualExpenses.length ? annualExpenses.map((expense) => `<article class="annual-expense-row"><div><strong>${escapeHtml(expense.name)}</strong><span>${escapeHtml(expenseCategoryNames[expense.category] || 'نور مصرف')} · ${escapeHtml(expense.period || new Date(expense.createdAt).toLocaleDateString())}</span><small><b>وجه:</b> ${escapeHtml(expense.note || 'د پخواني مصرف وجه نه ده ثبت شوې')}</small></div><b>${money(expense.amount)}</b></article>`).join('') : '<div class="empty-state compact">په دې کال کې مصرف نشته.</div>';
+      $('employeeList').innerHTML = employees.length ? employees.map((employee) => `<div class="finance-row"><span><b>${escapeHtml(employee.name)}</b><small>${escapeHtml(employee.role)} · ${money(employee.monthlySalary)}</small></span><button class="button danger" data-delete-employee="${escapeHtml(employee.id)}" type="button">حذف</button></div>`).join('') : '<div class="empty-state compact">کارمند نشته.</div>';
+      $('payrollEmployee').innerHTML = employees.length ? `<option value="">کارمند انتخاب کړئ</option>${employees.map((employee) => `<option value="${escapeHtml(employee.id)}" data-salary="${Number(employee.monthlySalary) || 0}">${escapeHtml(employee.name)} — ${money(employee.monthlySalary)}</option>`).join('')}` : '<option value="">لومړی کارمند ثبت کړئ</option>';
+      if (selectedPayrollEmployee && employees.some((employee) => employee.id === selectedPayrollEmployee)) $('payrollEmployee').value = selectedPayrollEmployee;
+      $('payrollList').innerHTML = (data.payroll || []).slice(0, 12).map((item) => `<div class="finance-row payroll-row"><span><b>${escapeHtml(item.employeeName)}</b><small>${escapeHtml(item.period)}</small><small class="linked-ledger-pill">✓ په میاشتني او کلني حساب کې شامل</small></span><strong>${money(item.amount)}</strong><button class="button danger" data-delete-payroll="${escapeHtml(item.id)}" type="button">حذف</button></div>`).join('') || '<div class="empty-state compact">معاش نه دی رسید شوی.</div>';
+      $('rentList').innerHTML = (data.rents || []).slice(0, 12).map((item) => `<div class="finance-row rent-row"><span><b>${escapeHtml(item.shopName)}</b><small>${escapeHtml(item.period)} · مالک: ${escapeHtml(item.landlord || 'نه دی ثبت')}</small><small class="expense-reason-line"><b>وجه:</b> ${escapeHtml(item.note || 'د کرایې رسید')}</small><small class="linked-ledger-pill">✓ په میاشتني او کلني حساب کې شامل</small></span><strong>${money(item.amount)}</strong><button class="button danger" data-delete-rent="${escapeHtml(item.id)}" type="button">حذف</button></div>`).join('') || '<div class="empty-state compact">کرایه نه ده رسید شوې.</div>';
+      const capitalAssets = data.capitalAssets || [];
+      $('capitalAssetsTotal').textContent = money(capitalAssets.reduce((sum, item) => sum + (Number(item.amount) || 0), 0));
+      $('capitalAssetList').innerHTML = capitalAssets.length ? capitalAssets.map((item) => `<div class="finance-row capital-row"><span class="capital-type ${item.type === 'capital' ? 'money' : 'asset'}">${item.type === 'capital' ? '؋' : '◇'}</span><span><b>${escapeHtml(item.name)}</b><small>${item.type === 'capital' ? 'نغدي پانګه' : `${Math.round(Number(item.quantity) || 1)} دانې وسیله`} · ${escapeHtml(item.acquiredAt || '')}${item.note ? ` · ${escapeHtml(item.note)}` : ''}</small><em class="saved-pill">● په MongoDB کې دایمي خوندي</em></span><strong>${money(item.amount)}</strong><button class="button danger" data-delete-capital="${escapeHtml(item.id)}" type="button">حذف</button></div>`).join('') : '<div class="empty-state compact">تر اوسه پانګه یا وسایل نه دي ثبت شوي.</div>';
+      const beverageIds = new Set(allMenuItems().filter(({ group }) => ['large-bottles', 'small-bottles'].includes(group.id)).map(({ item }) => item.id));
+      const inventory = (data.inventory || []).filter((item) => beverageIds.has(item.itemId));
+      const bottleTotal = inventory.reduce((sum, item) => sum + Math.max(0, Number(item.quantity) || 0), 0);
+      const costValue = inventory.reduce((sum, item) => sum + Math.max(0, Number(item.quantity) || 0) * (Number(item.averageCost) || 0), 0);
+      const retailValue = inventory.reduce((sum, item) => sum + Math.max(0, Number(item.quantity) || 0) * (Number(item.salePrice) || 0), 0);
+      $('inventoryItemCount').textContent = inventory.length;
+      $('inventoryBottleTotal').textContent = Math.round(bottleTotal).toLocaleString();
+      $('inventoryCostValue').textContent = money(costValue);
+      $('inventoryRetailValue').textContent = money(retailValue);
+      $('inventoryPotentialProfit').textContent = money(retailValue - costValue);
+      $('inventoryStockGrid').innerHTML = inventory.length ? inventory.map((item) => {
+        const quantity = Number(item.quantity) || 0;
+        const low = quantity <= (Number(item.reorderLevel) || 0);
+        const unitProfit = (Number(item.salePrice) || 0) - (Number(item.averageCost) || 0);
+        const safeQuantity = Math.max(0, quantity);
+        return `<article class="stock-card ${quantity <= 0 ? 'out' : low ? 'low' : 'good'}"><div class="stock-card-head"><span>${quantity <= 0 ? '!' : low ? '↓' : '✓'}</span><small>${quantity <= 0 ? 'خلاص/کمښت' : low ? 'کم پاتې' : 'موجود'}</small></div><strong>${escapeHtml(displayItemName(item.itemName))}</strong><div class="stock-quantity"><b>${safeQuantity.toLocaleString()}</b><span>${escapeHtml(item.unit || 'بوتل')} پاتې</span></div><div class="stock-prices"><span>پېر: ${money(item.averageCost)}</span><span>خرڅ: ${money(item.salePrice)}</span><b>د واحد ګټه: ${money(unitProfit)}</b><span>د پاتې پېر ارزښت: ${money(safeQuantity * (Number(item.averageCost) || 0))}</span><strong>د پاتې پلور ارزښت: ${money(safeQuantity * (Number(item.salePrice) || 0))}</strong></div><small>د خبرتیا حد: ${Math.round(Number(item.reorderLevel) || 0)}</small><button class="button danger stock-delete-button" type="button" data-delete-inventory="${escapeHtml(item.itemId)}" data-inventory-name="${escapeHtml(displayItemName(item.itemName))}">سټاک حذف کړه</button></article>`;
+      }).join('') : '<div class="empty-state compact">تر اوسه سټاک نه دی داخل شوی.</div>';
+      const beverageMovements = (data.inventoryMovements || []).filter((item) => beverageIds.has(item.itemId));
+      $('inventoryMovementList').innerHTML = beverageMovements.map((item) => `<div class="finance-row movement-row"><span class="movement-type ${item.type}">${item.type === 'in' ? '+' : '−'}</span><span><b>${escapeHtml(displayItemName(item.itemName))}</b><small>${escapeHtml(new Date(item.createdAt).toLocaleString())}${item.note ? ` · ${escapeHtml(item.note)}` : ''}</small><small>${item.type === 'in' ? `ټول پېر: ${money(item.totalPurchaseAmount)}` : `اصلي لګښت: ${money(item.costTotal)} · ګټه: ${money(item.grossProfit)}`}</small>${item.excludedFromFinance ? '<small class="stock-finance-excluded">فزیکي خرڅ پاتې دی · له حذف شوي مالي حساب څخه جلا</small>' : ''}</span><strong>${item.type === 'in' ? '+' : '−'}${Math.round(Number(item.quantity) || 0)} ${escapeHtml(item.unit || '')}</strong></div>`).join('') || '<div class="empty-state compact">د مشروباتو تاریخچه نشته.</div>';
+    }
+
+    async function submitFinanceForm(event, endpoint, body) {
+      event.preventDefault();
+      const button = event.currentTarget.querySelector('button[type="submit"]');
+      button.disabled = true;
+      try {
+        const data = await menuManagerRequest(endpoint, { method: 'POST', body: JSON.stringify(body()) });
+        if (data.financialAccounts) applyFinancialAccounts(data.financialAccounts);
+        await loadFinance();
+        renderExpenses();
+        const messages = { '/api/capital-assets': 'پانګه یا جنس جلا خوندي شو؛ په ګټه او مصرف کې نه شمېرل کېږي.', '/api/employees': 'کارمند په MongoDB کې خوندي شو.', '/api/inventory/receive': 'جنس سټاک ته داخل شو؛ له هر خرڅلاو سره به یې پاتې تعداد کمېږي.' };
+        showMenuManagerMessage(messages[endpoint] || 'رسید په MongoDB کې خوندي او په مصرف کې حساب شو.');
+      }
+      catch (error) { showMenuManagerMessage(error.message, 'danger'); }
+      finally { button.disabled = false; }
+    }
+
+    async function saveEmployee(event) {
+      event.preventDefault();
+      const form = event.currentTarget;
+      const button = form.querySelector('button[type="submit"]');
+      button.disabled = true;
+      try {
+        const data = await menuManagerRequest('/api/employees', {
+          method: 'POST',
+          body: JSON.stringify({
+            name: $('employeeName').value.trim(),
+            role: $('employeeRole').value.trim(),
+            phone: $('employeePhone').value.trim(),
+            monthlySalary: Number($('employeeSalary').value)
+          })
+        });
+        state.finance = { ...state.finance, employees: data.employees || [] };
+        renderFinance();
+        $('payrollEmployee').value = data.employee.id;
+        $('payrollAmount').value = data.employee.monthlySalary;
+        updatePayrollFields();
+        form.reset();
+        showMenuManagerMessage(`کارمند «${data.employee.name}» خوندي او د معاش په برخه کې انتخاب شو.`);
+        showToast(`کارمند «${data.employee.name}» ثبت او د معاش لپاره انتخاب شو.`, 'success');
+      } catch (error) {
+        showMenuManagerMessage(error.message, 'danger');
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    async function saveRent(event) {
+      event.preventDefault();
+      const form = event.currentTarget;
+      const button = form.querySelector('button[type="submit"]');
+      button.disabled = true;
+      try {
+        const data = await menuManagerRequest('/api/rents', {
+          method: 'POST',
+          body: JSON.stringify({
+            shopName: $('rentShopName').value.trim(),
+            landlord: $('rentLandlord').value.trim(),
+            period: $('rentPeriod').value,
+            amount: Number($('rentAmount').value),
+            note: $('rentNote').value.trim()
+          })
+        });
+        state.finance = { ...state.finance, rents: data.rents || state.finance.rents };
+        applyFinancialAccounts(data.financialAccounts);
+        renderFinance();
+        const savedPeriod = data.rent.period;
+        form.reset();
+        $('rentShopName').value = 'زعفران بریانی';
+        $('rentPeriod').value = savedPeriod;
+        showMenuManagerMessage(`د ${savedPeriod} کرایه خوندي او له ګټې څخه منفي شوه.`);
+        showToast(`د ${savedPeriod} کرایه په بریالیتوب رسید شوه.`, 'success');
+      } catch (error) {
+        showMenuManagerMessage(error.message, 'danger');
+        showToast(error.message, 'danger');
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    async function savePayroll(event) {
+      event.preventDefault();
+      const form = event.currentTarget;
+      const button = form.querySelector('button[type="submit"]');
+      const employeeId = $('payrollEmployee').value;
+      if (!employeeId) {
+        showMenuManagerMessage('لومړی کارمند انتخاب کړئ.', 'danger');
+        showToast('د معاش لپاره کارمند انتخاب کړئ.', 'danger');
+        return;
+      }
+      button.disabled = true;
+      try {
+        const data = await menuManagerRequest('/api/payroll', {
+          method: 'POST',
+          body: JSON.stringify({
+            employeeId,
+            period: $('payrollPeriod').value,
+            amount: Number($('payrollAmount').value),
+            note: $('payrollNote').value.trim()
+          })
+        });
+        state.finance = { ...state.finance, payroll: data.payroll || state.finance.payroll };
+        applyFinancialAccounts(data.financialAccounts);
+        renderFinance();
+        const employeeName = data.payment.employeeName;
+        showMenuManagerMessage(`د ${employeeName} معاش خوندي، په مصرف کې حساب او له ګټې څخه منفي شو.`);
+        showToast(`د ${employeeName} معاش په بریالیتوب رسید شو.`, 'success');
+      } catch (error) {
+        showMenuManagerMessage(error.message, 'danger');
+        showToast(error.message, 'danger');
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    function refreshSnapshotStats() {
+      const orders = state.snapshot.activeOrders || [];
+      const activeTables = new Set(orders.map((order) => Number(order.tableNumber)).filter(Boolean));
+      const activeTotal = orders.reduce((sum, order) => sum + (Number(order.total) || 0), 0);
+      state.snapshot.stats = {
+        ...(state.snapshot.stats || {}),
+        activeOrderCount: orders.length,
+        activeTableCount: activeTables.size,
+        readyOrderCount: orders.filter((order) => order.status === 'ready').length,
+        activeTotal
+      };
+    }
+
+    function replaceActiveOrders(orders) {
+      if (!Array.isArray(orders)) return;
+      state.snapshot = {
+        ...state.snapshot,
+        activeOrders: orders
+      };
+      refreshSnapshotStats();
+      render();
+    }
+
+    function upsertActiveOrder(order) {
+      if (!order || !order.id) return;
+      const orders = state.snapshot.activeOrders || [];
+      const index = orders.findIndex((item) => item.id === order.id);
+      const nextOrders = index === -1
+        ? [order, ...orders]
+        : orders.map((item) => (item.id === order.id ? { ...item, ...order } : item));
+      state.snapshot = {
+        ...state.snapshot,
+        activeOrders: nextOrders
+      };
+      refreshSnapshotStats();
+      render();
+    }
+
+    function applyOrderUpdate(data) {
+      if (!data || !data.orderId) return;
+      const orders = state.snapshot.activeOrders || [];
+      if (!orders.some((order) => order.id === data.orderId)) return;
+
+      state.snapshot = {
+        ...state.snapshot,
+        activeOrders: orders.map((order) => (
+          order.id === data.orderId
+            ? {
+                ...order,
+                items: Array.isArray(data.items) ? data.items : order.items,
+                total: Number.isFinite(Number(data.total)) ? Number(data.total) : order.total,
+                status: 'updated',
+                readyAt: null,
+                updatedAt: data.updatedAt || new Date().toISOString(),
+                lastUpdatedBy: data.lastUpdatedBy || data.waiterName || order.lastUpdatedBy
+              }
+            : order
+        ))
+      };
+      refreshSnapshotStats();
+      render();
+    }
+
+    function renderStats() {
+      const stats = state.snapshot.stats || {};
+      const todayBills = (state.snapshot.orderHistory || []).filter((bill) => isToday(bill.paidAt || bill.checkoutTimestamp));
+      const grossToday = todayBills.reduce((sum, bill) => sum + (Number(bill.total) || 0), 0);
+      const expensesToday = (state.snapshot.expenses || []).filter((expense) => !expense.sourceType && !expense.hiddenFromDaily && isToday(expense.createdAt));
+      const expenseTotal = expensesToday.reduce((sum, expense) => sum + (Number(expense.amount) || 0), 0);
+      const netToday = grossToday - expenseTotal;
+      $('statTables').textContent = stats.activeTableCount || 0;
+      $('statOpenTotal').textContent = money(stats.activeTotal || 0);
+      $('statRevenue').textContent = money(netToday);
+      $('statRevenue').classList.toggle('is-negative', netToday < 0);
+      $('statRevenueDetails').textContent = `عاید ${money(grossToday)} · مصرف ${money(expenseTotal)}`;
+      $('openTicketCount').textContent = `${stats.activeOrderCount || 0} tickets`;
+    }
+
+    function isToday(value) {
+      const date = new Date(value);
+      const today = new Date();
+      return !Number.isNaN(date.getTime())
+        && date.getFullYear() === today.getFullYear()
+        && date.getMonth() === today.getMonth()
+        && date.getDate() === today.getDate();
+    }
+
+    function renderExpenses() {
+      const expenses = (state.snapshot.expenses || []).filter((expense) => !expense.sourceType && !expense.hiddenFromDaily);
+      const todayExpenses = expenses.filter((expense) => isToday(expense.createdAt));
+      const total = todayExpenses.reduce((sum, expense) => sum + (Number(expense.amount) || 0), 0);
+      $('todayExpenseTotal').textContent = money(total);
+      $('expenseList').innerHTML = todayExpenses.length ? todayExpenses.map((expense) => `
+        <article class="counter-expense-item">
+          <div class="counter-expense-item-copy">
+            <strong>${escapeHtml(expense.name)}</strong>
+            <span>${escapeHtml(expenseCategoryNames[expense.category] || 'نور مصرف')} · ${escapeHtml(new Date(expense.createdAt).toLocaleString())}</span>
+            <span class="expense-reason-line"><b>وجه:</b> ${escapeHtml(expense.note || 'د دې پخواني مصرف وجه نه ده ثبت شوې')}</span>
+          </div>
+          <b>${money(expense.amount)}</b>
+          <button class="button danger" type="button" data-delete-expense="${escapeHtml(expense.id)}">له ورځني پټ کړه</button>
+        </article>
+      `).join('') : '<div class="empty-state compact">تر اوسه مصرف نشته.</div>';
+    }
+
+    async function saveExpense(event) {
+      event.preventDefault();
+      const button = $('saveExpenseButton');
+      button.disabled = true;
+      try {
+        const data = await menuManagerRequest('/api/expenses', {
+          method: 'POST',
+          body: JSON.stringify({
+            name: $('expenseName').value.trim(),
+            amount: Number($('expenseAmount').value),
+            category: $('expenseCategory').value,
+            note: $('expenseNote').value.trim()
+          })
+        });
+        state.snapshot = { ...state.snapshot, expenses: data.expenses || [], monthlyAccount: data.monthlyAccount || state.snapshot.monthlyAccount };
+        state.finance = { ...state.finance, annualAccount: data.annualAccount || state.finance.annualAccount };
+        $('expenseForm').reset();
+        renderStats();
+        renderExpenses();
+        renderMonthlyAccount();
+        renderFinance();
+        showMenuManagerMessage('مصرف ثبت او د نن ورځې له Paid څخه منفي شو.');
+        loadFinance().catch(() => {});
+      } catch (error) {
+        showMenuManagerMessage(error.message, 'danger');
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    async function deleteExpense(expenseId) {
+      if (!confirm('دا مصرف یوازې له ورځني لست څخه پټ شي؟ په میاشتني او کلني حساب کې به له نېټې او وجه سره خوندي پاتې وي.')) return;
+      try {
+        const data = await menuManagerRequest(`/api/expenses/${encodeURIComponent(expenseId)}`, { method: 'DELETE' });
+        state.snapshot = { ...state.snapshot, expenses: data.expenses || [], monthlyAccount: data.monthlyAccount || state.snapshot.monthlyAccount };
+        await loadFinance();
+        renderStats();
+        renderExpenses();
+        renderMonthlyAccount();
+        showMenuManagerMessage('مصرف له ورځني لست څخه پټ شو؛ په میاشتني، کلني او د ګټې حساب کې خوندي پاتې دی.');
+      } catch (error) {
+        showMenuManagerMessage(error.message, 'danger');
+      }
+    }
+
+    async function deleteAllManualExpenses() {
+      if (!confirm('ورځنی لست پاک شي؟ مصارف به په میاشتني، کلني او د ګټې حساب کې له نېټې او وجه سره خوندي پاتې وي.')) return;
+      const button = $('deleteAllExpensesButton');
+      button.disabled = true;
+      try {
+        const data = await menuManagerRequest('/api/expenses', { method: 'DELETE' });
+        state.snapshot.expenses = data.expenses || [];
+        state.snapshot.monthlyAccount = data.monthlyAccount || state.snapshot.monthlyAccount;
+        renderExpenses();
+        renderMonthlyAccount();
+        renderStats();
+        await loadFinance();
+        showMenuManagerMessage(`${Number(data.deletedCount) || 0} مصارف له ورځني لست څخه پټ شول؛ میاشتنی او کلنی حساب نه دی بدل شوی.`);
+      } catch (error) {
+        showMenuManagerMessage(error.message, 'danger');
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    async function deleteMonthlyFinancialAccount() {
+      const period = state.snapshot.monthlyAccount?.period || new Date().toISOString().slice(0, 7);
+      if (!confirm(`یوازې د ${period} میاشتنی راپور حذف شي؟ کلنی حساب، رسیدونه او فزیکي سټاک به نه بدلېږي.`)) return;
+      const password = prompt('د میاشتني حساب د حذف لپاره د مدیر پاسورډ ولیکئ:');
+      if (password === null) return;
+      const button = $('deleteMonthlyAccountButton');
+      button.disabled = true;
+      try {
+        const data = await menuManagerRequest(`/api/finance/month/${encodeURIComponent(period)}`, { method: 'DELETE', headers: { 'x-manager-password': password.trim() } });
+        applyFinancialAccounts(data.financialAccounts);
+        await loadFinance();
+        renderStats();
+        const totalDeleted = ['sales', 'expenses', 'inventoryMovements'].reduce((sum, key) => sum + (Number(data.deleted?.[key]) || 0), 0);
+        showMenuManagerMessage(`د ${period} میاشتنی راپور حذف شو؛ ${totalDeleted} برخې یوازې له میاشتني راپور څخه ووتلې. کلنی حساب او رسیدونه خوندي دي.`);
+        showToast(`میاشتنی راپور حذف شو؛ کلنی حساب خوندي دی.`, 'success');
+      } catch (error) { showMenuManagerMessage(error.message, 'danger'); showToast(error.message, 'danger'); }
+      finally { button.disabled = false; }
+    }
+
+    async function deleteAnnualFinancialAccount() {
+      const year = String(Number($('financeYear').value) || new Date().getFullYear());
+      if (!confirm(`یوازې د ${year} کلنی راپور حذف شي؟ میاشتني حسابونه، رسیدونه او فزیکي سټاک به نه بدلېږي.`)) return;
+      const password = prompt('د کلني حساب د حذف لپاره د مدیر پاسورډ ولیکئ:');
+      if (password === null) return;
+      const button = $('deleteAnnualAccountButton');
+      button.disabled = true;
+      try {
+        const data = await menuManagerRequest(`/api/finance/year/${encodeURIComponent(year)}`, { method: 'DELETE', headers: { 'x-manager-password': password.trim() } });
+        applyFinancialAccounts(data.financialAccounts);
+        await loadFinance();
+        renderStats();
+        const totalDeleted = ['sales', 'expenses', 'inventoryMovements'].reduce((sum, key) => sum + (Number(data.deleted?.[key]) || 0), 0);
+        showMenuManagerMessage(`د ${year} کلنی راپور حذف شو؛ ${totalDeleted} برخې یوازې له کلني راپور څخه ووتلې. میاشتني حسابونه او رسیدونه خوندي دي.`);
+        showToast(`کلنی راپور حذف شو؛ میاشتني حسابونه خوندي دي.`, 'success');
+      } catch (error) { showMenuManagerMessage(error.message, 'danger'); showToast(error.message, 'danger'); }
+      finally { button.disabled = false; }
+    }
+
+    function groupActiveTables() {
+      const groups = new Map();
+      (state.snapshot.activeOrders || []).forEach((order) => {
+        const isDelivery = order.orderType === 'delivery';
+        const isCounter = order.orderType === 'counter';
+        const isFake = order.orderType === 'fake';
+        const table = isDelivery || isCounter || isFake ? order.tableNumber : Number(order.tableNumber);
+        const key = isDelivery || isCounter || isFake ? order.id : `table-${table}`;
+        if (!groups.has(key)) {
+          groups.set(key, {
+            key,
+            table,
+            orderId: isDelivery || isCounter || isFake ? order.id : '',
+            isDelivery,
+            isCounter,
+            isFake,
+            title: isDelivery ? 'Delivery Order' : isFake ? 'فیک اډر' : isCounter ? 'Counter Order' : `Table ${table}`,
+            orders: [],
+            total: 0
+          });
+        }
+        const group = groups.get(key);
+        group.orders.push(order);
+        group.total += Number(order.total) || 0;
+      });
+      const createdTime = (order) => Date.parse(order?.createdAt || order?.timestamp || 0) || 0;
+      groups.forEach((group) => group.orders.sort((a, b) => createdTime(b) - createdTime(a)));
+      return [...groups.values()].sort((a, b) => createdTime(b.orders[0]) - createdTime(a.orders[0]));
+    }
+
+    function getOrderQueueNumber(orderId) {
+      const ordered = (state.snapshot.activeOrders || [])
+        .slice()
+        .sort((a, b) => Date.parse(a.createdAt || a.timestamp || 0) - Date.parse(b.createdAt || b.timestamp || 0));
+      const index = ordered.findIndex((order) => order.id === orderId);
+      return index === -1 ? '-' : index + 1;
+    }
+
+    function renderActiveTables() {
+      const groups = groupActiveTables();
+
+      if (!groups.length) {
+        $('activeTables').innerHTML = '<div class="empty-state">No open tables</div>';
+        return;
+      }
+
+      $('activeTables').innerHTML = groups.map((group) => {
+        const readyCount = group.orders.filter((order) => order.status === 'ready').length;
+        const allReady = readyCount === group.orders.length;
+        const updated = group.orders.some((order) => order.updatedAt);
+        const waiters = [...new Set(group.orders.map((order) => order.waiterName))].join(', ');
+
+        return `
+          <article class="order-card ${allReady ? 'ready' : 'new'}" data-table-card="${escapeHtml(group.key)}">
+            <div class="card-top">
+              <div>
+                <h3 class="card-title">${escapeHtml(group.title)}</h3>
+                <p class="card-subtitle">${escapeHtml(waiters)} · ${group.orders.length} ticket${group.orders.length === 1 ? '' : 's'}${group.orders.length > 1 ? ' · ټول د همدې ټیبل سره جمع دي' : ''}</p>
+                <div class="counter-order-times">
+                  ${group.orders.map((order, index) => `
+                    <p class="card-subtitle counter-order-time">
+                      <strong>نوبت #${escapeHtml(getOrderQueueNumber(order.id))}${group.orders.length > 1 ? ` · ارډر ${index + 1}` : ''}:</strong>
+                      <bdi class="counter-order-datetime" dir="ltr">${escapeHtml(formatOrderDateTime(order.createdAt))}</bdi>
+                    </p>
+                  `).join('')}
+                </div>
+                ${group.isDelivery ? group.orders.map((order) => `
+                  <p class="card-subtitle">${escapeHtml(order.customerPhone || '')}${order.customerName ? ` · ${escapeHtml(order.customerName)}` : ''}</p>
+                  ${order.deliveryAddress ? `<p class="card-subtitle">${escapeHtml(order.deliveryAddress)}</p>` : ''}
+                `).join('') : ''}
+              </div>
+              <div class="chip-row">
+                <span class="chip ${allReady ? 'ready' : 'warning'}">${readyCount}/${group.orders.length} ready</span>
+                ${updated ? '<span class="chip warning">Updated</span>' : ''}
+                <span class="chip" data-table-total="${escapeHtml(group.key)}">${money(group.total)}</span>
+              </div>
+            </div>
+            <div class="card-actions counter-order-actions">
+              ${group.orders.filter((order) => hasPendingOrderPrintSlip(order)).map((order) => `
+                <div class="counter-addition-print-slip">
+                  <div>
+                    <strong>${isOrderUpdatedAfterPrint(order) ? 'تغیر شوی آرډر' : 'نوی اضافه شوی آرډر'}</strong>
+                    <span>نوبت #${escapeHtml(getOrderQueueNumber(order.id))} · ${escapeHtml((order.items || []).reduce((sum, item) => sum + (Number(item.qty) || 0), 0))} توکي</span>
+                  </div>
+                  <button class="button primary" type="button" data-print-order="${escapeHtml(order.id)}">دا پارچه پرینټ کړه</button>
+                </div>
+              `).join('')}
+              ${group.orders.filter((order) => !order.isAdditionalOrder && !isOrderUpdatedAfterPrint(order)).map((order, index) => {
+                const printInfo = getOrderPrintInfo(order.id);
+                const label = group.orders.length > 1 ? 'اصلي آرډر' : group.title;
+                return `<button class="button ${printInfo ? 'success' : 'primary'}" type="button" data-print-order="${escapeHtml(order.id)}">${printInfo ? `بیا پرینټ ${escapeHtml(label)} · #${escapeHtml(printInfo.printNumber)}` : `پرینټ ${escapeHtml(label)}`}</button>`;
+              }).join('')}
+              <button class="button success" type="button" data-checkout="${escapeHtml(group.key)}">${group.isDelivery ? 'Checkout Delivery' : group.isFake ? 'Checkout فیک اډر' : group.isCounter ? 'Checkout Counter Order' : 'Checkout Table'}</button>
+            </div>
+            <div class="counter-price-list">
+              ${group.orders.map((order, orderIndex) => `
+                <section class="counter-ticket-items${orderIndex === 0 && group.orders.length > 1 ? ' is-latest-addition' : ''}">
+                  ${group.orders.length > 1 ? `
+                    <div class="counter-ticket-items-head">
+                      <strong>${orderIndex === 0 ? 'نوی اضافه شوی آرډر' : `پخوانی آرډر ${orderIndex}`}</strong>
+                      <span>نوبت #${escapeHtml(getOrderQueueNumber(order.id))}</span>
+                    </div>
+                  ` : ''}
+                  ${(order.items || []).map((item) => `
+                    <div class="item-line counter-price-line">
+                      <span><strong>${escapeHtml(item.qty)} × ${escapeHtml(displayItemName(item.name))}</strong></span>
+                      <div class="counter-price-edit">
+                        <input
+                          class="input counter-price-input"
+                          type="number"
+                          min="0"
+                          step="1"
+                          inputmode="numeric"
+                          aria-label="Price for ${escapeHtml(displayItemName(item.name))}"
+                          data-order-id="${escapeHtml(order.id)}"
+                          data-item-id="${escapeHtml(item.id)}"
+                          value="${Math.round(Number(item.price) || 0)}"
+                        />
+                        <span class="counter-line-total">${money(item.lineTotal || item.price * item.qty)}</span>
+                      </div>
+                    </div>
+                  `).join('')}
+                </section>
+              `).join('')}
+            </div>
+          </article>
+        `;
+      }).join('');
+    }
+
+    function renderHistory() {
+      const history = state.snapshot.orderHistory || [];
+      renderSalesProductSummary(history);
+
+      if (!history.length) {
+        $('historyList').innerHTML = '<div class="empty-state">No paid bills yet</div>';
+        return;
+      }
+
+      $('historyList').innerHTML = history.map((bill, index) => {
+        const invoiceNo = formatInvoiceNumber(bill);
+        const customerNote = collectReceiptText(bill.note, bill.customerNote, bill.specialInstructions, bill.notes);
+        const latest = index === 0;
+        const billTitle = bill.orderType === 'delivery' ? 'Delivery Order' : bill.orderType === 'fake' ? 'فیک اډر' : bill.orderType === 'counter' ? 'Counter Order' : `Table ${bill.tableNumber}`;
+
+        return `
+        <article class="bill-card ${latest ? 'latest-bill' : ''}" data-bill-id="${escapeHtml(bill.id)}">
+          <div class="card-top">
+            <div>
+              <h3 class="card-title">${escapeHtml(billTitle)}</h3>
+              <p class="card-subtitle">${formatDate(bill.paidAt || bill.checkoutTimestamp)} · ${escapeHtml(bill.paymentMethod || 'Cash')}</p>
+            </div>
+            <div class="chip-row">
+              ${latest ? '<span class="chip success">Latest</span>' : ''}
+              <span class="chip paid">${money(bill.total)}</span>
+              <button class="button ghost" type="button" data-print-bill="${escapeHtml(bill.id)}">Print</button>
+            </div>
+          </div>
+          <div class="card-subtitle">Invoice ${escapeHtml(invoiceNo)}</div>
+          ${bill.orderType === 'delivery' || bill.orderType === 'counter' || bill.orderType === 'fake' ? `<div class="card-subtitle">${escapeHtml(bill.customerPhone || '')}${bill.customerName ? ` · ${escapeHtml(bill.customerName)}` : ''}</div>${bill.deliveryAddress ? `<div class="card-subtitle">${escapeHtml(bill.deliveryAddress)}</div>` : ''}` : ''}
+          ${customerNote ? `<div class="card-subtitle">Note: ${escapeHtml(customerNote)}</div>` : ''}
+          ${(bill.items || []).map((item) => `
+            <div class="item-line">
+              <span>${escapeHtml(item.qty)} × ${escapeHtml(displayItemName(item.name))}</span>
+              <strong>${money(item.lineTotal || item.price * item.qty)}</strong>
+            </div>
+          `).join('')}
+        </article>
+      `;
+      }).join('');
+    }
+
+    function renderSalesProductSummary(history) {
+      const summary = $('salesProductSummary');
+      const products = new Map();
+
+      history.forEach((bill) => {
+        (bill.items || []).forEach((item) => {
+          const name = displayItemName(item.name) || 'Unknown item';
+          const key = name.trim().toLocaleLowerCase();
+          const quantity = Math.max(0, Number(item.qty) || 0);
+          const revenue = Math.max(0, Number(item.lineTotal) || (Number(item.price) || 0) * quantity);
+          const current = products.get(key) || { name, quantity: 0, revenue: 0 };
+          current.quantity += quantity;
+          current.revenue += revenue;
+          products.set(key, current);
+        });
+      });
+
+      const ranked = [...products.values()].sort((a, b) => (
+        b.quantity - a.quantity || b.revenue - a.revenue || a.name.localeCompare(b.name)
+      ));
+
+      if (!ranked.length) {
+        summary.classList.add('hidden');
+        summary.innerHTML = '';
+        return;
+      }
+
+      const totalUnits = ranked.reduce((total, item) => total + item.quantity, 0);
+      summary.classList.remove('hidden');
+      summary.innerHTML = `
+        <div class="sales-product-summary-head">
+          <div>
+            <h3 id="salesProductSummaryTitle">ډېر خرڅ شوي توکي</h3>
+            <p>له ډېر خرڅ څخه کم ته ترتیب شوي</p>
+          </div>
+          <span class="sales-product-total">${escapeHtml(totalUnits)} ټول توکي</span>
+        </div>
+        <div class="sales-product-list">
+          ${ranked.map((item, index) => `
+            <div class="sales-product-row">
+              <span class="sales-product-rank">${index + 1}</span>
+              <strong>${escapeHtml(item.name)}</strong>
+              <span class="sales-product-qty">${escapeHtml(item.quantity)} خرڅ</span>
+              <span class="sales-product-revenue">${money(item.revenue)}</span>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    function collectTablePriceItems(groupKey) {
+      const card = document.querySelector(`[data-table-card="${groupKey}"]`);
+      if (!card) return [];
+      const inputs = [...card.querySelectorAll('.counter-price-input')];
+      return inputs.map((input) => ({
+        orderId: input.dataset.orderId,
+        itemId: input.dataset.itemId,
+        price: Number(input.value)
+      }));
+    }
+
+    function saveTablePrices(groupKey, callback) {
+      const group = groupActiveTables().find((item) => String(item.key) === String(groupKey));
+      const items = collectTablePriceItems(groupKey);
+      if (!items.length) {
+        if (callback) callback(true);
+        return;
+      }
+
+      state.socket.emit('counter_update_prices', {
+        ...(group && (group.isDelivery || group.isCounter || group.isFake) ? { orderId: group.orderId } : { tableNumber: Number(group?.table || groupKey) }),
+        items
+      }, (response) => {
+        if (!response || !response.ok) {
+          showToast((response && response.message) || 'Could not save prices', 'danger');
+          if (callback) callback(false);
+          return;
+        }
+        if (callback) {
+          callback(true);
+          return;
+        }
+        showToast(`${group && group.isDelivery ? 'Delivery order' : group && group.isFake ? 'فیک اډر' : group && group.isCounter ? 'Counter order' : `Table ${group?.table || groupKey}`} prices updated`, 'success');
+        state.socket.emit('request_snapshot');
+      });
+    }
+
+    function checkoutTable(groupKey) {
+      const group = groupActiveTables().find((item) => String(item.key) === String(groupKey));
+      if (!group) return;
+
+      const pending = group.orders.some((order) => order.status !== 'ready');
+      if (pending && !confirm('Some items are still preparing. Checkout anyway?')) return;
+
+      const items = collectTablePriceItems(groupKey);
+
+      state.socket.emit('checkout_table', {
+        ...(group.isDelivery || group.isCounter || group.isFake ? { orderId: group.orderId } : { tableNumber: Number(group.table) }),
+        paymentMethod: 'Cash',
+        items
+      }, (response) => {
+        if (!response || !response.ok) {
+          return showToast((response && response.message) || 'Checkout failed', 'danger');
+        }
+        if (response.bill) {
+          state.snapshot = {
+            ...state.snapshot,
+            orderHistory: [response.bill, ...(state.snapshot.orderHistory || []).filter((bill) => bill.id !== response.bill.id)]
+          };
+          renderHistory();
+        }
+        state.lastCheckoutBill = response.bill || null;
+        applyFinancialAccounts(response.financialAccounts);
+        state.socket.emit('request_snapshot');
+        if (!$('financeWorkspace').classList.contains('hidden')) loadFinance();
+        showToast(`${group.isDelivery ? 'Delivery order' : group.isFake ? 'فیک اډر' : group.isCounter ? 'Counter order' : `Table ${group.table}`} checked out. It is now in Sales History.`, 'success');
+      });
+    }
+
+    function printCheckoutReceipt(bill) {
+      if (!bill) return;
+      if (state.printInProgress) return showToast('Printer is busy; please wait', 'danger');
+      state.printInProgress = true;
+      $('receiptPrint').classList.remove('kitchen-receipt-print');
+      $('receiptPrint').innerHTML = buildReceiptHtml(bill);
+      document.body.classList.add('print-receipt-mode');
+      printReceiptWhenReady();
+    }
+
+    async function printReceiptWhenReady() {
+      const images = [...$('receiptPrint').querySelectorAll('img')];
+      await Promise.all(images.map(async (image) => {
+        if (!image.complete) {
+          await new Promise((resolve) => {
+            image.addEventListener('load', resolve, { once: true });
+            image.addEventListener('error', resolve, { once: true });
+          });
+        }
+        if (image.decode) await image.decode().catch(() => {});
+      }));
+      await document.fonts?.ready;
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      setDynamicReceiptPageSize();
+      requestAnimationFrame(() => requestAnimationFrame(() => window.print()));
+    }
+
+    function setDynamicReceiptPageSize() {
+      const printArea = $('receiptPrint');
+      const paper = printArea.querySelector('.receipt-paper');
+      if (!paper) return;
+
+      printArea.classList.add('receipt-measuring');
+      const ruler = document.createElement('span');
+      ruler.className = 'receipt-mm-ruler';
+      ruler.setAttribute('aria-hidden', 'true');
+      printArea.appendChild(ruler);
+      const pixelsPerMm = ruler.getBoundingClientRect().width / 100;
+      const paperRect = paper.getBoundingClientRect();
+      const lastContent = paper.lastElementChild;
+      const lastContentBottom = lastContent
+        ? lastContent.getBoundingClientRect().bottom - paperRect.top
+        : 0;
+      // scrollHeight can inherit a browser/driver page height. Measure the actual
+      // last receipt element instead so an A4 default cannot become blank feed.
+      const heightPx = Math.ceil(Math.max(paperRect.height, lastContentBottom));
+      ruler.remove();
+      printArea.classList.remove('receipt-measuring');
+
+      const measuredHeightMm = heightPx / (pixelsPerMm || (96 / 25.4));
+      const heightMm = Math.max(
+        35,
+        Math.ceil((measuredHeightMm + RECEIPT_HEIGHT_SAFETY_MM) * 10) / 10
+      );
+      let pageStyle = document.getElementById('receiptDynamicPageSize');
+      if (!pageStyle) {
+        pageStyle = document.createElement('style');
+        pageStyle.id = 'receiptDynamicPageSize';
+        document.head.appendChild(pageStyle);
+      }
+      pageStyle.textContent = `
+        @media print {
+          @page { size: ${RECEIPT_PAGE_WIDTH_MM}mm ${heightMm}mm; margin: 0; }
+          html, body {
+            width: ${RECEIPT_PAGE_WIDTH_MM}mm !important;
+            min-height: 0 !important;
+            height: ${heightMm}mm !important;
+            max-height: ${heightMm}mm !important;
+          }
+          body.print-receipt-mode .receipt-print {
+            min-height: 0 !important;
+            height: auto !important;
+            max-height: none !important;
+          }
+          body.print-receipt-mode .receipt-paper {
+            min-height: 0 !important;
+            height: auto !important;
+            max-height: none !important;
+            overflow: visible !important;
+          }
+        }
+      `;
+    }
+
+    function printLastCheckoutReceipt() {
+      const latestHistoryBill = (state.snapshot.orderHistory || [])[0];
+      const bill = latestHistoryBill || state.lastCheckoutBill;
+
+      if (!bill) {
+        showToast('No paid bill available to print', 'danger');
+        return;
+      }
+
+      printCheckoutReceipt(bill);
+    }
+
+    function printHistoryBill(billId) {
+      const bill = (state.snapshot.orderHistory || []).find((item) => item.id === billId);
+      if (!bill) {
+        showToast('Bill not found in history', 'danger');
+        return;
+      }
+      printCheckoutReceipt(bill);
+    }
+
+    async function clearHistory() {
+      if (!confirm('د نن ورځې Dashboard، Paid تاریخچه او ورځنی مصرف پاک شي؟ میاشتنی او کلنی حساب به خوندي پاتې وي.')) return;
+      try {
+        const expenseData = await menuManagerRequest('/api/expenses', { method: 'DELETE' });
+        state.snapshot.expenses = expenseData.expenses || state.snapshot.expenses;
+        state.snapshot.monthlyAccount = expenseData.monthlyAccount || state.snapshot.monthlyAccount;
+        renderExpenses();
+        renderStats();
+      } catch (error) {
+        return showToast(error.message || 'ورځنی حساب پاک نه شو', 'danger');
+      }
+      state.socket.emit('clear_all_history', (response) => {
+        if (!response || !response.ok) {
+          return showToast('Could not clear history', 'danger');
+        }
+        state.lastCheckoutBill = null;
+        state.snapshot.orderHistory = [];
+        renderHistory();
+        renderStats();
+        showToast('ورځنی Dashboard پاک شو؛ معلومات په میاشتني او کلني حساب کې خوندي دي.', 'success');
+      });
+    }
+
+    function showToast(message, type) {
+      const toast = $('toast');
+      toast.textContent = message;
+      toast.className = `notice ${type === 'danger' ? 'danger' : 'success'}`;
+      toast.classList.remove('hidden');
+      clearTimeout(window.__toastTimeout);
+      window.__toastTimeout = setTimeout(() => toast.classList.add('hidden'), 4200);
+    }
+
+    function formatDate(value) {
+      if (!value) return '';
+      return new Date(value).toLocaleString([], {
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+
+    function formatOrderDateTime(value) {
+      if (!value) return 'وخت نشته';
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return 'وخت نشته';
+      return date.toLocaleString('en-GB', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      }).replace(/\b(am|pm)\b/i, (marker) => marker.toUpperCase());
+    }
+
+    function formatReceiptDate(value) {
+      const date = value ? new Date(value) : new Date();
+      return date.toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      });
+    }
+
+    function receiptMoney(value) {
+      return Math.round(Number(value) || 0).toLocaleString();
+    }
+
+    function formatReceiptTime(value) {
+      const date = value ? new Date(value) : new Date();
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function loadPrintLog() {
+      try {
+        const items = JSON.parse(localStorage.getItem(PRINT_LOG_KEY) || '[]');
+        return Array.isArray(items) ? items : [];
+      } catch (error) {
+        return [];
+      }
+    }
+
+    function getOrderPrintInfo(orderId) {
+      return state.printLog.find((item) => item.orderId === orderId) || null;
+    }
+
+    function isOrderUpdatedAfterPrint(order) {
+      const printInfo = getOrderPrintInfo(order?.id);
+      if (!printInfo || !order?.updatedAt) return false;
+      return Date.parse(order.updatedAt) > Date.parse(printInfo.printedAt || 0);
+    }
+
+    function hasPendingOrderPrintSlip(order) {
+      if (!order?.id) return false;
+      if (isOrderUpdatedAfterPrint(order)) return true;
+      return Boolean(order.isAdditionalOrder && !getOrderPrintInfo(order.id));
+    }
+
+    function recordCounterPrint(order) {
+      const current = Number(localStorage.getItem(PRINT_COUNTER_KEY)) || 0;
+      const existing = getOrderPrintInfo(order.id);
+      const printInfo = {
+        orderId: order.id,
+        printNumber: current + 1,
+        printedAt: new Date().toISOString(),
+        printCount: existing ? (Number(existing.printCount) || 1) + 1 : 1,
+        previousPrintNumbers: existing
+          ? [...(existing.previousPrintNumbers || []), existing.printNumber].slice(-10)
+          : []
+      };
+      localStorage.setItem(PRINT_COUNTER_KEY, String(printInfo.printNumber));
+      state.printLog = [printInfo, ...state.printLog.filter((item) => item.orderId !== order.id)].slice(0, 200);
+      localStorage.setItem(PRINT_LOG_KEY, JSON.stringify(state.printLog));
+      return printInfo;
+    }
+
+    function buildOpenOrderReceiptHtml(order, printInfo) {
+      const createdAt = order.createdAt || new Date().toISOString();
+      const items = order.items || [];
+      const isDelivery = order.orderType === 'delivery';
+      const grandTotal = Math.max(0, Number(order.total) || items.reduce((sum, item) => (
+        sum + (Number(item.lineTotal) || Number(item.price) * Number(item.qty) || 0)
+      ), 0));
+      const tableLabel = formatReceiptTableLabel(order);
+      const orderNote = String(order.note || '').trim();
+      const infoRows = isDelivery
+        ? [
+            ['Date', formatReceiptDate(createdAt)],
+            ['Phone Number', order.customerPhone || '-'],
+            ['Customer Name', order.customerName || '-'],
+            ['Address', order.deliveryAddress || '-']
+          ]
+        : [
+            ['Date', formatReceiptDate(createdAt)],
+            [order.orderType === 'counter' || order.orderType === 'fake' ? 'Order' : 'Table', tableLabel]
+          ];
+      const itemRows = items.length ? items.map((item, index) => {
+        const qty = Number(item.qty) || 0;
+        const lineTotal = Number(item.lineTotal) || Number(item.price) * qty;
+        const unitPrice = Number(item.price) || (qty ? lineTotal / qty : 0);
+        return `<tr><td>${index + 1}</td><td class="receipt-simple-name">${escapeHtml(displayItemName(item.name))}</td><td>${qty}</td><td class="receipt-simple-price">${receiptMoney(unitPrice)}</td><td class="receipt-simple-price">${receiptMoney(lineTotal)}</td></tr>`;
+      }).join('') : '<tr><td class="receipt-simple-name" colspan="5">No items</td></tr>';
+
+      return `
+          <div class="receipt-paper receipt-simple kitchen-receipt">
+          <img class="receipt-simple-logo" src="/images/zaffran-receipt-logo.png" alt="زعفران بریانی" />
+          <div class="receipt-print-mark">پرینټ نمبر #${escapeHtml(printInfo.printNumber)}</div>
+          <div class="receipt-print-time">Printed at ${escapeHtml(formatReceiptTime(printInfo.printedAt))}</div>
+          <div class="receipt-simple-info">
+            ${infoRows.map(([label, value]) => `<div class="receipt-simple-info-row"><span>${escapeHtml(label)}:</span><strong>${escapeHtml(value)}</strong></div>`).join('')}
+          </div>
+          ${orderNote ? `
+            <div class="receipt-order-note">
+              <span>${escapeHtml(orderNote)}</span>
+            </div>
+          ` : ''}
+          <div class="receipt-simple-hr"></div>
+          <table class="receipt-simple-table">
+            <thead><tr><th>#</th><th>توکی</th><th>تعداد</th><th>فی نرخ</th><th>مجموعه</th></tr></thead>
+            <tbody>${itemRows}</tbody>
+          </table>
+          <div class="receipt-simple-hr"></div>
+          <div class="receipt-simple-total-line"><span>مجموعه:</span><span>${receiptMoney(grandTotal)}</span></div>
+          <div class="receipt-simple-hr-double"></div>
+          <p class="receipt-simple-thanks">مهرباني بیل کونټر ته تسلیم کړی</p>
+          ${isDelivery ? '<p class="receipt-simple-thanks">مننه چي موږ مو انتخاب کړو</p>' : ''}
+        </div>`;
+    }
+
+    function printOpenOrderObject(order) {
+      if (!order?.id || state.printInProgress) return;
+      state.printInProgress = true;
+      const printInfo = recordCounterPrint(order);
+      $('receiptPrint').classList.add('kitchen-receipt-print');
+      $('receiptPrint').innerHTML = buildOpenOrderReceiptHtml(order, printInfo);
+      document.body.classList.add('print-receipt-mode');
+      renderActiveTables();
+      printReceiptWhenReady();
+    }
+
+    function printOpenOrder(orderId) {
+      const order = (state.snapshot.activeOrders || []).find((item) => item.id === orderId);
+      if (!order) return showToast('Order not found', 'danger');
+      printOpenOrderObject(order);
+    }
+
+    function collectReceiptText(...values) {
+      const parts = [];
+      const push = (value) => {
+        if (Array.isArray(value)) {
+          value.forEach(push);
+          return;
+        }
+        const text = String(value ?? '').trim();
+        if (text && !parts.includes(text)) {
+          parts.push(text);
+        }
+      };
+
+      values.forEach(push);
+      return parts.join(' · ');
+    }
+
+    function formatInvoiceNumber(bill) {
+      const raw = String(bill.id || bill.orderIds?.[0] || Date.now());
+      const compact = raw.replace(/[^a-zA-Z0-9]/g, '').slice(-8).toUpperCase();
+      return compact ? `#${compact}` : '#00000000';
+    }
+
+    function formatReceiptTableLabel(bill) {
+      if (bill.orderType === 'delivery') return 'Delivery';
+      if (bill.orderType === 'fake') return 'فیک اډر';
+      if (bill.orderType === 'counter') return 'Counter Order';
+      const tableNo = bill.tableNumber || bill.table;
+      return tableNo != null && tableNo !== '' ? String(tableNo) : '-';
+    }
+
+    function buildReceiptHtml(bill) {
+      const paidAt = bill.paidAt || bill.checkoutTimestamp || new Date().toISOString();
+      const items = bill.items || [];
+      const customerNote = collectReceiptText(bill.note, bill.customerNote, bill.specialInstructions, bill.notes);
+      const grandTotal = Math.max(0, Number(bill.total) || items.reduce((sum, item) => (
+        sum + (Number(item.lineTotal) || Number(item.price) * Number(item.qty) || 0)
+      ), 0));
+      const tableLabel = formatReceiptTableLabel(bill);
+      const customerRows = [
+        ['Date', formatReceiptDate(paidAt)],
+        [bill.orderType === 'delivery' || bill.orderType === 'counter' || bill.orderType === 'fake' ? 'Order' : 'Table', tableLabel],
+        bill.customerName ? ['Customer', bill.customerName] : null,
+        bill.customerPhone ? ['Phone', bill.customerPhone] : null,
+        bill.deliveryAddress ? ['Address', bill.deliveryAddress] : null,
+        customerNote ? ['Note', customerNote] : null
+      ].filter(Boolean);
+
+      const itemRows = items.length
+        ? items.map((item, index) => {
+            const qty = Number(item.qty) || 0;
+            const lineTotal = Number(item.lineTotal) || Number(item.price) * qty;
+            const unitPrice = Number(item.price) || (qty ? lineTotal / qty : 0);
+            return `
+              <tr>
+                <td>${index + 1}</td>
+                <td class="receipt-simple-name">${escapeHtml(displayItemName(item.name))}</td>
+                <td>${qty}</td>
+                <td class="receipt-simple-price">${receiptMoney(unitPrice)}</td>
+                <td class="receipt-simple-price">${receiptMoney(lineTotal)}</td>
+              </tr>
+            `;
+          }).join('')
+        : '<tr><td class="receipt-simple-name" colspan="5">No items</td></tr>';
+
+      return `
+        <div class="receipt-paper receipt-simple">
+          <img class="receipt-simple-logo" src="/images/zaffran-receipt-logo.png" alt="زعفران بریانی" />
+
+          <div class="receipt-simple-info">
+            ${customerRows.map(([label, value]) => `
+              <div class="receipt-simple-info-row">
+                <span>${escapeHtml(label)}:</span>
+                <strong>${escapeHtml(value)}</strong>
+              </div>
+            `).join('')}
+          </div>
+
+          <div class="receipt-simple-hr"></div>
+
+          <table class="receipt-simple-table">
+            <thead><tr><th>#</th><th>توکی</th><th>تعداد</th><th>فی نرخ</th><th>مجموعه</th></tr></thead>
+            <tbody>${itemRows}</tbody>
+          </table>
+
+          <div class="receipt-simple-hr"></div>
+
+          <div class="receipt-simple-total-line">
+            <span>مجموعه:</span>
+            <span>${receiptMoney(grandTotal)}</span>
+          </div>
+
+          <div class="receipt-simple-hr-double"></div>
+
+          <p class="receipt-simple-thanks">مننه چي موږ مو انتخاب کړو</p>
+
+          <div class="receipt-simple-hr"></div>
+
+          <p class="receipt-simple-phone">${escapeHtml(RECEIPT_CONFIG.phone)}</p>
+        </div>
+      `;
+    }
+
+    window.addEventListener('afterprint', () => {
+      document.body.classList.remove('print-receipt-mode');
+      $('receiptPrint').classList.remove('kitchen-receipt-print');
+      document.getElementById('receiptDynamicPageSize')?.remove();
+      state.printInProgress = false;
+    });
+
+    $('loginButton').addEventListener('click', checkPassword);
+    document.addEventListener('pointerdown', unlockOrderAlertOnInteraction);
+    document.addEventListener('click', unlockOrderAlertOnInteraction);
+    document.addEventListener('keydown', unlockOrderAlertOnInteraction);
+    $('counterPassword').addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') checkPassword();
+    });
+    $('activeTables').addEventListener('click', (event) => {
+      const printButton = event.target.closest('[data-print-order]');
+      if (printButton) {
+        printOpenOrder(printButton.dataset.printOrder);
+        return;
+      }
+
+      const button = event.target.closest('[data-checkout]');
+      if (!button) return;
+      checkoutTable(button.dataset.checkout);
+    });
+    $('historyList').addEventListener('click', (event) => {
+      const printButton = event.target.closest('[data-print-bill]');
+      if (!printButton) return;
+      printHistoryBill(printButton.dataset.printBill);
+    });
+    $('clearHistoryButton').addEventListener('click', clearHistory);
+    $('printButton').addEventListener('click', printLastCheckoutReceipt);
+    $('toggleMenuManagerButton').addEventListener('click', () => {
+      setMenuManagerVisible($('counterMenuManager').classList.contains('hidden'));
+    });
+    $('hideMenuManagerButton').addEventListener('click', () => setMenuManagerVisible(false));
+    document.querySelector('.manager-command-nav').addEventListener('click', (event) => {
+      const button = event.target.closest('[data-manager-view]');
+      if (button) showManagerView(button.dataset.managerView);
+    });
+    $('menuGroupId').addEventListener('change', updateMenuCategoryHint);
+    $('counterMenuForm').addEventListener('submit', saveNewMenuItem);
+    $('expenseForm').addEventListener('submit', saveExpense);
+    $('refreshFinanceButton').addEventListener('click', loadFinance);
+    $('deleteMonthlyAccountButton').addEventListener('click', deleteMonthlyFinancialAccount);
+    $('deleteAnnualAccountButton').addEventListener('click', deleteAnnualFinancialAccount);
+    const currentPeriod = localMonthKey();
+    state.calendarPeriod = currentPeriod;
+    $('financeMonth').value = currentPeriod;
+    $('payrollPeriod').value = currentPeriod;
+    $('rentPeriod').value = currentPeriod;
+    $('capitalAssetDate').value = localDateKey();
+    window.setInterval(() => checkCalendarRollover().catch(() => {}), 15000);
+    $('financeYear').addEventListener('change', loadFinance);
+    $('financeMonth').addEventListener('change', loadFinance);
+    $('employeeForm').addEventListener('submit', saveEmployee);
+    $('payrollForm').addEventListener('submit', savePayroll);
+    $('rentForm').addEventListener('submit', saveRent);
+    $('capitalAssetForm').addEventListener('submit', (event) => submitFinanceForm(event, '/api/capital-assets', () => ({ type: $('capitalAssetType').value, name: $('capitalAssetName').value, quantity: Number($('capitalAssetQuantity').value), amount: Number($('capitalAssetAmount').value), acquiredAt: $('capitalAssetDate').value, note: $('capitalAssetNote').value })));
+    function updateInventoryPurchaseTotal() {
+      $('inventoryPurchaseTotal').value = money((Number($('inventoryQuantity').value) || 0) * (Number($('inventoryPurchasePrice').value) || 0));
+    }
+    $('inventoryReceiveForm').addEventListener('submit', (event) => submitFinanceForm(event, '/api/inventory/receive', () => {
+      const option = $('inventoryMenuItem').selectedOptions[0];
+      return { itemId: $('inventoryMenuItem').value, itemName: option?.dataset.name || option?.textContent || '', groupId: option?.dataset.groupId || '', quantity: Number($('inventoryQuantity').value), unit: $('inventoryUnit').value, purchasePrice: Number($('inventoryPurchasePrice').value), salePrice: Number($('inventorySalePrice').value), reorderLevel: Number($('inventoryReorderLevel').value), note: $('inventoryNote').value };
+    }));
+    ['inventoryQuantity', 'inventoryPurchasePrice'].forEach((id) => $(id).addEventListener('input', updateInventoryPurchaseTotal));
+    $('inventoryMenuItem').addEventListener('change', () => {
+      const price = $('inventoryMenuItem').selectedOptions[0]?.dataset.price;
+      if (price) $('inventorySalePrice').value = price;
+    });
+    $('inventoryStockGrid').addEventListener('click', async (event) => {
+      const button = event.target.closest('[data-delete-inventory]');
+      if (!button) return;
+      const name = button.dataset.inventoryName || 'دا مشروب';
+      if (!confirm(`${name} له سټاک څخه بشپړ حذف شي؟ تعداد، غلط قیمت او د داخل/وتلو تاریخچه به پاکه شي، بیا یې له سره ثبتولی شئ.`)) return;
+      button.disabled = true;
+      try {
+        const data = await menuManagerRequest(`/api/inventory/${encodeURIComponent(button.dataset.deleteInventory)}`, { method: 'DELETE' });
+        if (data.financialAccounts) applyFinancialAccounts(data.financialAccounts);
+        state.finance = { ...state.finance, inventory: data.inventory || [], inventoryMovements: data.inventoryMovements || [] };
+        renderFinance();
+        showMenuManagerMessage(`${name} له سټاک او تاریخچې حذف شو؛ اوس یې له سره په سم قیمت او تعداد ثبت کړئ.`);
+        showToast('مشروب له سټاک څخه حذف شو.', 'success');
+      } catch (error) {
+        showMenuManagerMessage(error.message, 'danger');
+        button.disabled = false;
+      }
+    });
+    window.addEventListener('asad-menu-prices-updated', () => {
+      fillInventoryMenuItems();
+      renderFinance();
+    });
+    function updatePayrollFields() {
+      const option = $('payrollEmployee').selectedOptions[0];
+      if (option?.dataset.salary) $('payrollAmount').value = option.dataset.salary;
+      const employeeName = option?.textContent?.split('—')[0]?.trim();
+      if ($('payrollEmployee').value && employeeName) $('payrollNote').value = `د ${employeeName} د ${$('payrollPeriod').value} میاشتې معاش`;
+    }
+    $('payrollEmployee').addEventListener('change', updatePayrollFields);
+    $('payrollPeriod').addEventListener('change', updatePayrollFields);
+    $('employeeList').addEventListener('click', async (event) => {
+      const button = event.target.closest('[data-delete-employee]');
+      if (!button || !confirm('دا کارمند حذف شي؟ پخواني معاش رسیدونه به پاتې وي.')) return;
+      try {
+        const data = await menuManagerRequest(`/api/employees/${encodeURIComponent(button.dataset.deleteEmployee)}`, { method: 'DELETE' });
+        state.finance = { ...state.finance, employees: data.employees || [] };
+        renderFinance();
+        showToast('کارمند حذف شو؛ پخوانی معاش تاریخ په حساب کې خوندي دی.', 'success');
+      }
+      catch (error) { showMenuManagerMessage(error.message, 'danger'); }
+    });
+    $('capitalAssetList').addEventListener('click', async (event) => {
+      const button = event.target.closest('[data-delete-capital]');
+      if (!button || !confirm('دا دایمي ثبت شوی جنس یا پانګه د مدیر په لاس له MongoDB څخه حذف شي؟')) return;
+      try { await menuManagerRequest(`/api/capital-assets/${encodeURIComponent(button.dataset.deleteCapital)}`, { method: 'DELETE' }); await loadFinance(); }
+      catch (error) { showMenuManagerMessage(error.message, 'danger'); }
+    });
+    $('payrollList').addEventListener('click', async (event) => {
+      const button = event.target.closest('[data-delete-payroll]');
+      if (!button || !confirm('دا د معاش رسید یوازې له دې لست څخه حذف شي؟ معاش به په ورځني، میاشتني او کلني حساب کې خوندي پاتې وي.')) return;
+      button.disabled = true;
+      try {
+        const data = await menuManagerRequest(`/api/payroll/${encodeURIComponent(button.dataset.deletePayroll)}`, { method: 'DELETE' });
+        state.finance = { ...state.finance, payroll: data.payroll || [] };
+        applyFinancialAccounts(data.financialAccounts);
+        renderFinance();
+        showToast('رسید له لست څخه حذف شو؛ معاش په ټولو مالي حسابونو کې خوندي دی.', 'success');
+      } catch (error) { showToast(error.message, 'danger'); button.disabled = false; }
+    });
+    $('rentList').addEventListener('click', async (event) => {
+      const button = event.target.closest('[data-delete-rent]');
+      if (!button || !confirm('دا د کرایې رسید یوازې له دې لست څخه حذف شي؟ کرایه به په ورځني، میاشتني او کلني حساب کې خوندي پاتې وي.')) return;
+      button.disabled = true;
+      try {
+        const data = await menuManagerRequest(`/api/rents/${encodeURIComponent(button.dataset.deleteRent)}`, { method: 'DELETE' });
+        state.finance = { ...state.finance, rents: data.rents || [] };
+        applyFinancialAccounts(data.financialAccounts);
+        renderFinance();
+        showToast('رسید له لست څخه حذف شو؛ کرایه په ټولو مالي حسابونو کې خوندي ده.', 'success');
+      } catch (error) { showToast(error.message, 'danger'); button.disabled = false; }
+    });
+    $('expenseList').addEventListener('click', (event) => {
+      const button = event.target.closest('[data-delete-expense]');
+      if (button) deleteExpense(button.dataset.deleteExpense);
+    });
+    $('deleteAllExpensesButton').addEventListener('click', deleteAllManualExpenses);
+    $('counterCustomMenuItems').addEventListener('click', (event) => {
+      const saveButton = event.target.closest('[data-save-menu-price]');
+      if (saveButton) {
+        saveMenuPrice(saveButton.dataset.saveMenuPrice, saveButton);
+        return;
+      }
+      const button = event.target.closest('[data-delete-menu-item]');
+      if (button) deleteCounterMenuItem(button.dataset.deleteMenuItem);
+    });
+    $('menuSearch').addEventListener('input', renderAllMenuItems);
+    $('clearMenuSearch').addEventListener('click', () => {
+      $('menuSearch').value = '';
+      renderAllMenuItems();
+      $('menuSearch').focus();
+    });
+    $('logoutButton').addEventListener('click', window.KandaharAuth.logout);
+    fillMenuCategories();
+    loadCounterCustomMenu();
+    renderExpenses();
+    showManagerView(localStorage.getItem(MANAGER_VIEW_KEY) || 'menu').catch(() => {});
+    checkExistingLogin();
+  </script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+2026/08/18-21:36:10.025 20 Reusing MANIFEST D:\first-project\.edge-direct-print\Default\EdgeCoupons/coupons_data.db/MANIFEST-000001
+2026/08/18-21:36:10.037 20 Recovering log #7
+2026/08/18-21:36:10.038 20 Reusing old log D:\first-project\.edge-direct-print\Default\EdgeCoupons/coupons_data.db/000007.log 
+2026/08/18-21:36:10.909 2894 Level-0 table #11: started
+2026/08/18-21:36:10.913 2894 Level-0 table #11: 683376 bytes OK
+2026/08/18-21:36:10.914 2894 Delete type=0 #7

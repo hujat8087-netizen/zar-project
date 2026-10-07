@@ -1,0 +1,5 @@
+2026/08/24-15:28:11.073 45f8 Creating DB D:\first-project\.edge-xp80-print\Default\EdgeCoupons/coupons_data.db since it was missing.
+2026/08/24-15:28:11.101 45f8 Reusing MANIFEST D:\first-project\.edge-xp80-print\Default\EdgeCoupons/coupons_data.db/MANIFEST-000001
+2026/08/24-15:28:13.256 2bd8 Level-0 table #5: started
+2026/08/24-15:28:13.261 2bd8 Level-0 table #5: 683273 bytes OK
+2026/08/24-15:28:13.262 2bd8 Delete type=0 #3

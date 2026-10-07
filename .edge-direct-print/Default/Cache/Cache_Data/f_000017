@@ -1,0 +1,1259 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#18202f" />
+  <title>Counter | Pizza Point</title>
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="stylesheet" href="/styles.css?v=73" />
+  <script src="/password-toggle.js"></script>
+  <script src="/auth.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/menu-custom.js?v=48"></script>
+  <script src="/menu-data.js?v=50"></script>
+</head>
+<body>
+  <section id="loginScreen" class="login-screen">
+    <div class="login-panel">
+      <p class="eyebrow">Pizza Point</p>
+      <h1>Counter Login</h1>
+      <p>Cashier and sales history</p>
+      <div class="field">
+        <label for="counterPassword">Password</label>
+        <div class="password-field">
+          <input id="counterPassword" class="input" type="password" autocomplete="current-password" placeholder="Enter password" />
+          <button type="button" class="password-toggle" data-password-toggle aria-controls="counterPassword" aria-label="Show password" aria-pressed="false">Show</button>
+        </div>
+      </div>
+      <div style="height: 12px"></div>
+      <button id="loginButton" class="button primary" type="button">Login</button>
+      <div id="loginMessage" class="notice danger hidden" style="margin-top: 12px"></div>
+    </div>
+  </section>
+
+  <div id="app" class="app-shell hidden">
+    <header class="app-header">
+      <div class="header-inner">
+        <a class="brand-block" href="/">
+          <span class="brand-mark" aria-hidden="true">PP</span>
+          <div class="brand-text">
+            <p class="eyebrow">Counter Desk</p>
+            <h1 class="brand-title">Pizza Point</h1>
+            <p class="brand-subtitle">Checkout, open tables, and daily revenue</p>
+          </div>
+        </a>
+
+        <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="appNav" aria-label="Open menu">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+
+        <div class="header-end" id="appNav">
+          <nav class="header-nav" aria-label="Role navigation">
+            <div class="nav-pills">
+              <a class="nav-link" href="/">Home</a>
+              <a class="nav-link" href="/waiter.html">Waiter</a>
+              <a class="nav-link" href="/delivery.html">Delivery</a>
+              <a class="nav-link" href="/fake-order.html">فیک اډر</a>
+              <a class="nav-link active" href="/counter.html">Counter</a>
+              <a class="nav-link" href="/menu-manager.html">Menu Manager</a>
+            </div>
+          </nav>
+          <div class="header-tools">
+            <span id="offlineBadge" class="status-chip warning">Checking</span>
+            <button id="logoutButton" class="tool-button" type="button">Logout</button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="page">
+      <section class="stat-grid" aria-label="Counter stats">
+        <div class="stat">
+          <div class="stat-label">Active tables</div>
+          <div id="statTables" class="stat-value">0</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Open balance</div>
+          <div id="statOpenTotal" class="stat-value">0 AFN</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Paid today</div>
+          <div id="statRevenue" class="stat-value">0 AFN</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Counter status</div>
+          <div id="connectionStatus" class="stat-value" style="font-size: 1.2rem">Connecting</div>
+        </div>
+      </section>
+
+      <div class="counter-menu-launcher">
+        <button id="toggleMenuManagerButton" class="button ghost" type="button" aria-expanded="false" aria-controls="counterMenuManager">
+          د مینیو مدیریت ښکاره کړه
+        </button>
+      </div>
+
+      <section id="counterMenuManager" class="panel counter-menu-manager hidden" aria-labelledby="counterMenuTitle">
+        <div class="panel-header">
+          <div>
+            <h2 id="counterMenuTitle" class="panel-title">د ټولې مینیو او نرخونو مدیریت</h2>
+            <p class="panel-kicker">ټولې کټګورۍ او خواړه دلته دي؛ هر نرخ بدل او سمدستي یې دایمي خوندي کړئ</p>
+          </div>
+          <div class="top-actions">
+            <span id="customMenuCount" class="chip">0 خواړه</span>
+            <button id="hideMenuManagerButton" class="button ghost" type="button">برخه پټه کړه</button>
+          </div>
+        </div>
+
+        <form id="counterMenuForm" class="counter-menu-form">
+          <div class="field">
+            <label for="menuGroupId">کټګوري / برخه</label>
+            <select id="menuGroupId" class="select" required></select>
+            <small id="menuCategoryHint" class="field-hint"></small>
+          </div>
+          <div class="field">
+            <label for="newMenuName">د خوراک نوم</label>
+            <input id="newMenuName" class="input" type="text" maxlength="100" placeholder="مثال: سپیشل چکن برګر" required />
+          </div>
+          <div class="field">
+            <label for="newMenuPrice">قیمت په افغانۍ</label>
+            <input id="newMenuPrice" class="input" type="number" min="1" max="1000000" step="1" inputmode="numeric" placeholder="150" required />
+          </div>
+          <button id="saveMenuItemButton" class="button success" type="submit">ذخیره کول</button>
+        </form>
+        <div id="menuManagerMessage" class="notice hidden" style="margin-top: 14px"></div>
+        <div class="field counter-menu-search">
+          <label for="menuSearch">په مینیو کې لټون</label>
+          <input id="menuSearch" class="input" type="search" placeholder="د خوراک یا کټګورۍ نوم ولیکئ" />
+        </div>
+        <div id="counterCustomMenuItems" class="counter-custom-menu-list"></div>
+      </section>
+
+      <div class="dashboard-grid">
+        <section class="panel span-7">
+          <div class="panel-header">
+            <div>
+              <h2 class="panel-title">Open Tables</h2>
+              <p class="panel-kicker">فعال میزونه</p>
+            </div>
+            <span id="openTicketCount" class="chip">0 tickets</span>
+          </div>
+          <div id="activeTables" class="orders-list"></div>
+        </section>
+
+        <div class="span-5 side-stack">
+          <aside class="panel">
+            <div class="panel-header">
+              <div>
+                <h2 class="panel-title">Sales History</h2>
+                <p class="panel-kicker">د خرڅلاو تاریخچه</p>
+              </div>
+              <div class="top-actions">
+                <button id="printButton" class="button ghost" type="button">Print</button>
+                <button id="clearHistoryButton" class="button danger" type="button">Clear</button>
+              </div>
+            </div>
+            <div id="historyList" class="history-list"></div>
+          </aside>
+        </div>
+      </div>
+
+      <div id="toast" class="notice hidden" style="margin-top: 16px"></div>
+    </main>
+  </div>
+
+  <section id="receiptPrint" class="receipt-print" aria-hidden="true"></section>
+
+  <script src="/header-nav.js"></script>
+  <script src="/offline.js"></script>
+  <script>
+    const PAGE_ROLE = 'counter';
+    const RECEIPT_PAGE_WIDTH_MM = 76.2;
+    const RECEIPT_HEIGHT_SAFETY_MM = 1.5;
+    const PRINT_LOG_KEY = 'kandahar_kitchen_print_log';
+    const PRINT_COUNTER_KEY = 'kandahar_kitchen_print_counter';
+    const AUTO_PRINTED_ORDERS_KEY = 'pizza_point_auto_printed_orders';
+    const RECEIPT_CONFIG = {
+      name: 'Welcome To Pizza Point',
+      phone: '+93705384148'
+    };
+    const state = {
+      socket: null,
+      snapshot: { activeOrders: [], orderHistory: [], stats: {}, totalRevenue: 0 },
+      lastCheckoutBill: null,
+      printLog: loadPrintLog(),
+      orderAlertAudio: null,
+      autoPrintQueue: [],
+      printInProgress: false
+    };
+    const menuGroups = window.AsadBurgerKingMenuGroups || [];
+    const MENU_MANAGER_PASSWORD = 'asadking';
+    const menuFilterNames = {
+      food: 'خواړه',
+      deals: 'ډیلونه',
+      drinks: 'مشروبات',
+      tea: 'چای او کافي',
+      dessert: 'شیریني او آیسکریم'
+    };
+
+    const $ = (id) => document.getElementById(id);
+    const money = (value) => `${Math.round(Number(value) || 0).toLocaleString()} AFN`;
+    const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#039;'
+    }[char]));
+
+    function fillMenuCategories() {
+      const categories = menuGroups.reduce((result, group) => {
+        (result[group.filter] ||= []).push(group);
+        return result;
+      }, {});
+      $('menuGroupId').innerHTML = Object.entries(categories).map(([filter, groups]) => `
+        <optgroup label="${escapeHtml(menuFilterNames[filter] || filter)}">
+          ${groups.map((group) => `<option value="${escapeHtml(group.id)}">${escapeHtml(group.localName)} — ${escapeHtml(group.name)}</option>`).join('')}
+        </optgroup>
+      `).join('');
+      updateMenuCategoryHint();
+    }
+
+    function updateMenuCategoryHint() {
+      const group = menuGroups.find((item) => item.id === $('menuGroupId').value);
+      $('menuCategoryHint').textContent = group
+        ? `نوی خوراک به د «${group.localName}» په برخه کې ښکاره شي.`
+        : '';
+    }
+
+    function showMenuManagerMessage(message, type = 'success') {
+      const notice = $('menuManagerMessage');
+      notice.textContent = message;
+      notice.className = `notice ${type === 'danger' ? 'danger' : 'success'}`;
+    }
+
+    function setMenuManagerVisible(visible) {
+      const manager = $('counterMenuManager');
+      manager.classList.toggle('hidden', !visible);
+      $('toggleMenuManagerButton').setAttribute('aria-expanded', String(visible));
+      $('toggleMenuManagerButton').textContent = visible
+        ? 'د مینیو مدیریت پټ کړه'
+        : 'د مینیو مدیریت ښکاره کړه';
+    }
+
+    async function menuManagerRequest(url, options = {}) {
+      const response = await fetch(url, {
+        ...options,
+        headers: {
+          'Content-Type': 'application/json',
+          'x-manager-password': MENU_MANAGER_PASSWORD,
+          ...(options.headers || {})
+        }
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.message || 'عملیات ناکام شول.');
+      return data;
+    }
+
+    function allMenuItems() {
+      return menuGroups.flatMap((group) => (group.sections || []).flatMap((section) =>
+        (section.variants || []).flatMap((item) => {
+          if (!Array.isArray(item.priceOptions) || !item.priceOptions.length) {
+            return [{ item, group, section }];
+          }
+          return item.priceOptions.map((price, optionIndex) => ({
+            item: {
+              ...item,
+              id: `${item.id}-option-${optionIndex}`,
+              deleteId: item.id,
+              label: `${item.label} — ${optionIndex + 1}`,
+              price
+            },
+            group,
+            section
+          }));
+        })
+      ));
+    }
+
+    function renderAllMenuItems() {
+      const query = $('menuSearch').value.trim().toLocaleLowerCase();
+      const items = allMenuItems();
+      const visible = items.filter(({ item, group, section }) =>
+        [item.label, item.labelEn, item.size, group.localName, group.name, section.titleLocal, section.title]
+          .filter(Boolean).join(' ').toLocaleLowerCase().includes(query)
+      );
+      $('customMenuCount').textContent = `${items.length} خواړه`;
+      $('counterCustomMenuItems').innerHTML = visible.length ? visible.map(({ item, group, section }) => `
+        <article class="counter-custom-menu-item" data-menu-row="${escapeHtml(item.id)}">
+          <div class="counter-menu-item-name">
+            <strong dir="rtl">${escapeHtml(item.label)}${item.size ? ` — ${escapeHtml(item.size)}` : ''}</strong>
+            <span>${escapeHtml(group.localName)} · ${escapeHtml(section.titleLocal || section.title || '')}</span>
+          </div>
+          <div class="counter-menu-price-editor">
+            <input class="input" type="number" min="1" max="1000000" step="1" value="${Number(item.price) || 0}" aria-label="د ${escapeHtml(item.label)} نرخ" data-menu-price="${escapeHtml(item.id)}" />
+            <span>AFN</span>
+            <button class="button success" type="button" data-save-menu-price="${escapeHtml(item.id)}">نرخ خوندي کړه</button>
+            <button class="button danger" type="button" data-delete-menu-item="${escapeHtml(item.deleteId || item.id)}">حذف</button>
+          </div>
+        </article>`).join('') : '<div class="empty-state compact">ستاسې د لټون مطابق خوراک پیدا نه شو.</div>';
+    }
+
+    async function loadCounterCustomMenu() {
+      try {
+        const data = await menuManagerRequest('/api/menu/prices');
+        (data.customItems || []).forEach((item) => {
+          window.AsadBurgerKingApplyMenuUpdate?.({ action: 'added', item });
+        });
+        Object.entries(data.prices || {}).forEach(([itemId, price]) => {
+          window.AsadBurgerKingApplyMenuUpdate?.({ action: 'price_updated', itemId, price });
+        });
+        (data.deletedItemIds || []).forEach((itemId) => {
+          window.AsadBurgerKingApplyMenuUpdate?.({ action: 'deleted', itemId });
+        });
+        renderAllMenuItems();
+      } catch (error) {
+        showMenuManagerMessage(error.message, 'danger');
+      }
+    }
+
+    async function saveMenuPrice(itemId, button) {
+      const input = document.querySelector(`[data-menu-price="${CSS.escape(itemId)}"]`);
+      button.disabled = true;
+      try {
+        const data = await menuManagerRequest(`/api/menu/prices/${encodeURIComponent(itemId)}`, {
+          method: 'PUT', body: JSON.stringify({ price: Number(input.value) })
+        });
+        window.AsadBurgerKingApplyMenuUpdate?.(data);
+        input.value = data.price;
+        showMenuManagerMessage('نرخ دایمي خوندي شو او په ټول سیستم کې سمدستي بدل شو.');
+      } catch (error) {
+        showMenuManagerMessage(error.message, 'danger');
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    async function saveNewMenuItem(event) {
+      event.preventDefault();
+      const button = $('saveMenuItemButton');
+      button.disabled = true;
+      try {
+        const data = await menuManagerRequest('/api/menu/custom', {
+          method: 'POST',
+          body: JSON.stringify({
+            groupId: $('menuGroupId').value,
+            name: $('newMenuName').value.trim(),
+            price: Number($('newMenuPrice').value)
+          })
+        });
+        window.AsadBurgerKingApplyMenuUpdate?.({ action: 'added', item: data.item });
+        $('newMenuName').value = '';
+        $('newMenuPrice').value = '';
+        showMenuManagerMessage('نوی خوراک دایمي ذخیره او خپلې کټګورۍ ته اضافه شو.');
+        await loadCounterCustomMenu();
+      } catch (error) {
+        showMenuManagerMessage(error.message, 'danger');
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    async function deleteCounterMenuItem(itemId) {
+      if (!confirm('دا خوراک له مینیو څخه حذف شي؟')) return;
+      try {
+        const data = await menuManagerRequest(`/api/menu/custom/${encodeURIComponent(itemId)}`, { method: 'DELETE' });
+        window.AsadBurgerKingApplyMenuUpdate?.(data);
+        showMenuManagerMessage('خوراک له مینیو څخه حذف شو.');
+        await loadCounterCustomMenu();
+      } catch (error) {
+        showMenuManagerMessage(error.message, 'danger');
+      }
+    }
+
+    function displayItemName(value) {
+      let text = String(value ?? '').trim();
+      if (!text) return '';
+
+      if (text.includes('·')) {
+        const parts = text.split('·').map((part) => part.trim()).filter(Boolean);
+        if (parts.length > 2) {
+          text = parts.slice(2).join(' ');
+        } else {
+          text = parts.join(' ');
+        }
+      }
+
+      if (text.includes('/')) {
+        const parts = text.split('/').map((part) => part.trim()).filter(Boolean);
+        if (parts.length > 1) {
+          text = parts[0];
+        }
+      }
+
+      const platterSuffixMatch = text.match(/^نفري\s*-\s*(.+?)\s*([۰-۹٠-٩0-9]+)$/);
+      const platterPrefixMatch = text.match(/^([۰-۹٠-٩0-9]+)\s*نفري\s*-\s*(.+)$/);
+      if (platterSuffixMatch) {
+        text = `${platterSuffixMatch[1]} ${platterSuffixMatch[2]} نفری`;
+      } else if (platterPrefixMatch) {
+        text = `${platterPrefixMatch[2]} ${platterPrefixMatch[1]} نفری`;
+      }
+
+      return text.replace(/\s+/g, ' ').trim();
+    }
+
+    function checkPassword() {
+      const role = window.KandaharAuth.loginWithPassword($('counterPassword').value);
+      if (!role) {
+        $('loginMessage').textContent = 'Incorrect password';
+        $('loginMessage').classList.remove('hidden');
+        return;
+      }
+
+      if (role.key !== PAGE_ROLE) {
+        window.KandaharAuth.redirectToRole(role.key);
+        return;
+      }
+
+      window.KandaharAuth.showLoginIntro(role, unlockPage);
+    }
+
+    function unlockPage() {
+      $('loginScreen').classList.add('hidden');
+      $('app').classList.remove('hidden');
+      startApp();
+    }
+
+    async function enableOrderAlertSound() {
+      if (!state.orderAlertAudio) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) return null;
+        state.orderAlertAudio = new AudioContextClass();
+      }
+      if (state.orderAlertAudio.state === 'suspended') {
+        await state.orderAlertAudio.resume().catch(() => {});
+      }
+      return state.orderAlertAudio;
+    }
+
+    async function playNewOrderAlert() {
+      const audio = await enableOrderAlertSound();
+      if (!audio || audio.state !== 'running') return;
+
+      const startAt = audio.currentTime + 0.03;
+      const alertPattern = [
+        [0, 880],
+        [0.24, 1046],
+        [0.48, 880],
+        [0.9, 1046],
+        [1.14, 1318]
+      ];
+      alertPattern.forEach(([delay, frequency]) => {
+        const oscillator = audio.createOscillator();
+        const gain = audio.createGain();
+        oscillator.type = 'square';
+        oscillator.frequency.setValueAtTime(frequency, startAt + delay);
+        gain.gain.setValueAtTime(0.0001, startAt + delay);
+        gain.gain.exponentialRampToValueAtTime(0.32, startAt + delay + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, startAt + delay + 0.18);
+        oscillator.connect(gain);
+        gain.connect(audio.destination);
+        oscillator.start(startAt + delay);
+        oscillator.stop(startAt + delay + 0.2);
+      });
+    }
+
+    function checkExistingLogin() {
+      const roleKey = window.KandaharAuth.currentRole();
+      if (!roleKey) return;
+      if (roleKey !== PAGE_ROLE) {
+        window.KandaharAuth.redirectToRole(roleKey);
+        return;
+      }
+      unlockPage();
+    }
+
+    function startApp() {
+      if (state.socket) return;
+      render();
+
+      state.socket = io();
+      state.socket.on('connect', () => {
+        $('connectionStatus').textContent = 'Live';
+        state.socket.emit('request_snapshot');
+      });
+      state.socket.on('disconnect', () => {
+        $('connectionStatus').textContent = 'Offline';
+      });
+      state.socket.on('snapshot', (snapshot) => {
+        state.snapshot = snapshot || state.snapshot;
+        render();
+      });
+      state.socket.on('active_orders', (orders) => {
+        replaceActiveOrders(orders);
+      });
+      state.socket.on('display_order_in_counter', (order) => {
+        upsertActiveOrder(order);
+      });
+      state.socket.on('order_created', (order) => {
+        playNewOrderAlert();
+        const orderLabel = order?.orderNumber || order?.tableNumber || '';
+        showToast(`نوی آرډر راغی${orderLabel ? ` · ${orderLabel}` : ''} — اتومات پرینټ کېږي`, 'success');
+        queueOrderForAutomaticPrint(order);
+      });
+      state.socket.on('order_updated_notification', (data) => {
+        applyOrderUpdate(data);
+      });
+      state.socket.on('app_error', (error) => showToast(error.message || 'Server error', 'danger'));
+    }
+
+    function render() {
+      renderStats();
+      renderActiveTables();
+      renderHistory();
+    }
+
+    function refreshSnapshotStats() {
+      const orders = state.snapshot.activeOrders || [];
+      const activeTables = new Set(orders.map((order) => Number(order.tableNumber)).filter(Boolean));
+      const activeTotal = orders.reduce((sum, order) => sum + (Number(order.total) || 0), 0);
+      state.snapshot.stats = {
+        ...(state.snapshot.stats || {}),
+        activeOrderCount: orders.length,
+        activeTableCount: activeTables.size,
+        readyOrderCount: orders.filter((order) => order.status === 'ready').length,
+        activeTotal
+      };
+    }
+
+    function replaceActiveOrders(orders) {
+      if (!Array.isArray(orders)) return;
+      state.snapshot = {
+        ...state.snapshot,
+        activeOrders: orders
+      };
+      refreshSnapshotStats();
+      render();
+    }
+
+    function upsertActiveOrder(order) {
+      if (!order || !order.id) return;
+      const orders = state.snapshot.activeOrders || [];
+      const index = orders.findIndex((item) => item.id === order.id);
+      const nextOrders = index === -1
+        ? [order, ...orders]
+        : orders.map((item) => (item.id === order.id ? { ...item, ...order } : item));
+      state.snapshot = {
+        ...state.snapshot,
+        activeOrders: nextOrders
+      };
+      refreshSnapshotStats();
+      render();
+    }
+
+    function applyOrderUpdate(data) {
+      if (!data || !data.orderId) return;
+      const orders = state.snapshot.activeOrders || [];
+      if (!orders.some((order) => order.id === data.orderId)) return;
+
+      state.snapshot = {
+        ...state.snapshot,
+        activeOrders: orders.map((order) => (
+          order.id === data.orderId
+            ? {
+                ...order,
+                items: Array.isArray(data.items) ? data.items : order.items,
+                total: Number.isFinite(Number(data.total)) ? Number(data.total) : order.total,
+                status: 'updated',
+                readyAt: null,
+                updatedAt: data.updatedAt || new Date().toISOString(),
+                lastUpdatedBy: data.lastUpdatedBy || data.waiterName || order.lastUpdatedBy
+              }
+            : order
+        ))
+      };
+      refreshSnapshotStats();
+      render();
+    }
+
+    function renderStats() {
+      const stats = state.snapshot.stats || {};
+      $('statTables').textContent = stats.activeTableCount || 0;
+      $('statOpenTotal').textContent = money(stats.activeTotal || 0);
+      $('statRevenue').textContent = money(state.snapshot.totalRevenue || 0);
+      $('openTicketCount').textContent = `${stats.activeOrderCount || 0} tickets`;
+    }
+
+    function groupActiveTables() {
+      const groups = new Map();
+      (state.snapshot.activeOrders || []).forEach((order) => {
+        const isDelivery = order.orderType === 'delivery';
+        const isCounter = order.orderType === 'counter';
+        const isFake = order.orderType === 'fake';
+        const table = isDelivery || isCounter || isFake ? order.tableNumber : Number(order.tableNumber);
+        const key = isDelivery || isCounter || isFake ? order.id : `table-${table}`;
+        if (!groups.has(key)) {
+          groups.set(key, {
+            key,
+            table,
+            orderId: isDelivery || isCounter || isFake ? order.id : '',
+            isDelivery,
+            isCounter,
+            isFake,
+            title: isDelivery ? 'Delivery Order' : isFake ? 'فیک اډر' : isCounter ? 'Counter Order' : `Table ${table}`,
+            orders: [],
+            total: 0
+          });
+        }
+        const group = groups.get(key);
+        group.orders.push(order);
+        group.total += Number(order.total) || 0;
+      });
+      return [...groups.values()].sort((a, b) => String(a.table).localeCompare(String(b.table), undefined, { numeric: true }));
+    }
+
+    function getOrderQueueNumber(orderId) {
+      const ordered = (state.snapshot.activeOrders || [])
+        .slice()
+        .sort((a, b) => Date.parse(a.createdAt || a.timestamp || 0) - Date.parse(b.createdAt || b.timestamp || 0));
+      const index = ordered.findIndex((order) => order.id === orderId);
+      return index === -1 ? '-' : index + 1;
+    }
+
+    function renderActiveTables() {
+      const groups = groupActiveTables();
+
+      if (!groups.length) {
+        $('activeTables').innerHTML = '<div class="empty-state">No open tables</div>';
+        return;
+      }
+
+      $('activeTables').innerHTML = groups.map((group) => {
+        const readyCount = group.orders.filter((order) => order.status === 'ready').length;
+        const allReady = readyCount === group.orders.length;
+        const updated = group.orders.some((order) => order.updatedAt);
+        const waiters = [...new Set(group.orders.map((order) => order.waiterName))].join(', ');
+
+        return `
+          <article class="order-card ${allReady ? 'ready' : 'new'}" data-table-card="${escapeHtml(group.key)}">
+            <div class="card-top">
+              <div>
+                <h3 class="card-title">${escapeHtml(group.title)}</h3>
+                <p class="card-subtitle">${escapeHtml(waiters)} · ${group.orders.length} ticket${group.orders.length === 1 ? '' : 's'}</p>
+                <div class="counter-order-times">
+                  ${group.orders.map((order, index) => `
+                    <p class="card-subtitle counter-order-time">
+                      <strong>نوبت #${escapeHtml(getOrderQueueNumber(order.id))}${group.orders.length > 1 ? ` · ارډر ${index + 1}` : ''}:</strong>
+                      <bdi class="counter-order-datetime" dir="ltr">${escapeHtml(formatOrderDateTime(order.createdAt))}</bdi>
+                    </p>
+                  `).join('')}
+                </div>
+                ${group.isDelivery ? group.orders.map((order) => `
+                  <p class="card-subtitle">${escapeHtml(order.customerPhone || '')}${order.customerName ? ` · ${escapeHtml(order.customerName)}` : ''}</p>
+                  ${order.deliveryAddress ? `<p class="card-subtitle">${escapeHtml(order.deliveryAddress)}</p>` : ''}
+                `).join('') : ''}
+              </div>
+              <div class="chip-row">
+                <span class="chip ${allReady ? 'ready' : 'warning'}">${readyCount}/${group.orders.length} ready</span>
+                ${updated ? '<span class="chip warning">Updated</span>' : ''}
+                <span class="chip" data-table-total="${escapeHtml(group.key)}">${money(group.total)}</span>
+              </div>
+            </div>
+            <div class="counter-price-list">
+              ${group.orders.flatMap((order) => (order.items || []).map((item) => `
+                <div class="item-line counter-price-line">
+                  <span><strong>${escapeHtml(item.qty)} × ${escapeHtml(displayItemName(item.name))}</strong></span>
+                  <div class="counter-price-edit">
+                    <input
+                      class="input counter-price-input"
+                      type="number"
+                      min="0"
+                      step="1"
+                      inputmode="numeric"
+                      aria-label="Price for ${escapeHtml(displayItemName(item.name))}"
+                      data-order-id="${escapeHtml(order.id)}"
+                      data-item-id="${escapeHtml(item.id)}"
+                      value="${Math.round(Number(item.price) || 0)}"
+                    />
+                    <span class="counter-line-total">${money(item.lineTotal || item.price * item.qty)}</span>
+                  </div>
+                </div>
+              `)).join('')}
+            </div>
+            <div class="card-actions">
+              ${group.orders.map((order, index) => {
+                const printInfo = getOrderPrintInfo(order.id);
+                const label = group.orders.length > 1 ? `ارډر ${index + 1}` : group.title;
+                return `<button class="button ${printInfo ? 'success' : 'ghost'}" type="button" data-print-order="${escapeHtml(order.id)}">${printInfo ? `بیا پرینټ ${escapeHtml(label)} · #${escapeHtml(printInfo.printNumber)}` : `پرینټ ${escapeHtml(label)}`}</button>`;
+              }).join('')}
+              <select class="select" data-payment="${escapeHtml(group.key)}" aria-label="Payment method">
+                <option>Cash</option>
+                <option>Card</option>
+                <option>Transfer</option>
+              </select>
+              <button class="button primary" type="button" data-save-prices="${escapeHtml(group.key)}">Save Prices</button>
+              <button class="button success" type="button" data-checkout="${escapeHtml(group.key)}">${group.isDelivery ? 'Checkout Delivery' : group.isFake ? 'Checkout فیک اډر' : group.isCounter ? 'Checkout Counter Order' : 'Checkout Table'}</button>
+            </div>
+          </article>
+        `;
+      }).join('');
+    }
+
+    function renderHistory() {
+      const history = state.snapshot.orderHistory || [];
+
+      if (!history.length) {
+        $('historyList').innerHTML = '<div class="empty-state">No paid bills yet</div>';
+        return;
+      }
+
+      $('historyList').innerHTML = history.map((bill, index) => {
+        const invoiceNo = formatInvoiceNumber(bill);
+        const customerNote = collectReceiptText(bill.note, bill.customerNote, bill.specialInstructions, bill.notes);
+        const latest = index === 0;
+        const billTitle = bill.orderType === 'delivery' ? 'Delivery Order' : bill.orderType === 'fake' ? 'فیک اډر' : bill.orderType === 'counter' ? 'Counter Order' : `Table ${bill.tableNumber}`;
+
+        return `
+        <article class="bill-card ${latest ? 'latest-bill' : ''}" data-bill-id="${escapeHtml(bill.id)}">
+          <div class="card-top">
+            <div>
+              <h3 class="card-title">${escapeHtml(billTitle)}</h3>
+              <p class="card-subtitle">${formatDate(bill.paidAt || bill.checkoutTimestamp)} · ${escapeHtml(bill.paymentMethod || 'Cash')}</p>
+            </div>
+            <div class="chip-row">
+              ${latest ? '<span class="chip success">Latest</span>' : ''}
+              <span class="chip paid">${money(bill.total)}</span>
+              <button class="button ghost" type="button" data-print-bill="${escapeHtml(bill.id)}">Print</button>
+            </div>
+          </div>
+          <div class="card-subtitle">Invoice ${escapeHtml(invoiceNo)}</div>
+          ${bill.orderType === 'delivery' || bill.orderType === 'counter' || bill.orderType === 'fake' ? `<div class="card-subtitle">${escapeHtml(bill.customerPhone || '')}${bill.customerName ? ` · ${escapeHtml(bill.customerName)}` : ''}</div>${bill.deliveryAddress ? `<div class="card-subtitle">${escapeHtml(bill.deliveryAddress)}</div>` : ''}` : ''}
+          ${customerNote ? `<div class="card-subtitle">Note: ${escapeHtml(customerNote)}</div>` : ''}
+          ${(bill.items || []).map((item) => `
+            <div class="item-line">
+              <span>${escapeHtml(item.qty)} × ${escapeHtml(displayItemName(item.name))}</span>
+              <strong>${money(item.lineTotal || item.price * item.qty)}</strong>
+            </div>
+          `).join('')}
+        </article>
+      `;
+      }).join('');
+    }
+
+    function collectTablePriceItems(groupKey) {
+      const card = document.querySelector(`[data-table-card="${groupKey}"]`);
+      if (!card) return [];
+      const inputs = [...card.querySelectorAll('.counter-price-input')];
+      return inputs.map((input) => ({
+        orderId: input.dataset.orderId,
+        itemId: input.dataset.itemId,
+        price: Number(input.value)
+      }));
+    }
+
+    function saveTablePrices(groupKey, callback) {
+      const group = groupActiveTables().find((item) => String(item.key) === String(groupKey));
+      const items = collectTablePriceItems(groupKey);
+      if (!items.length) {
+        if (callback) callback(true);
+        return;
+      }
+
+      state.socket.emit('counter_update_prices', {
+        ...(group && (group.isDelivery || group.isCounter || group.isFake) ? { orderId: group.orderId } : { tableNumber: Number(group?.table || groupKey) }),
+        items
+      }, (response) => {
+        if (!response || !response.ok) {
+          showToast((response && response.message) || 'Could not save prices', 'danger');
+          if (callback) callback(false);
+          return;
+        }
+        if (callback) {
+          callback(true);
+          return;
+        }
+        showToast(`${group && group.isDelivery ? 'Delivery order' : group && group.isFake ? 'فیک اډر' : group && group.isCounter ? 'Counter order' : `Table ${group?.table || groupKey}`} prices updated`, 'success');
+        state.socket.emit('request_snapshot');
+      });
+    }
+
+    function checkoutTable(groupKey) {
+      const group = groupActiveTables().find((item) => String(item.key) === String(groupKey));
+      if (!group) return;
+
+      const pending = group.orders.some((order) => order.status !== 'ready');
+      if (pending && !confirm('Some items are still preparing. Checkout anyway?')) return;
+
+      const payment = document.querySelector(`[data-payment="${groupKey}"]`);
+      const items = collectTablePriceItems(groupKey);
+
+      state.socket.emit('checkout_table', {
+        ...(group.isDelivery || group.isCounter || group.isFake ? { orderId: group.orderId } : { tableNumber: Number(group.table) }),
+        paymentMethod: payment ? payment.value : 'Cash',
+        items
+      }, (response) => {
+        if (!response || !response.ok) {
+          return showToast((response && response.message) || 'Checkout failed', 'danger');
+        }
+        if (response.bill) {
+          state.snapshot = {
+            ...state.snapshot,
+            orderHistory: [response.bill, ...(state.snapshot.orderHistory || []).filter((bill) => bill.id !== response.bill.id)]
+          };
+          renderHistory();
+        }
+        state.lastCheckoutBill = response.bill || null;
+        state.socket.emit('request_snapshot');
+        showToast(`${group.isDelivery ? 'Delivery order' : group.isFake ? 'فیک اډر' : group.isCounter ? 'Counter order' : `Table ${group.table}`} checked out. It is now in Sales History.`, 'success');
+      });
+    }
+
+    function printCheckoutReceipt(bill) {
+      if (!bill) return;
+      if (state.printInProgress) return showToast('Printer is busy; please wait', 'danger');
+      state.printInProgress = true;
+      $('receiptPrint').classList.remove('kitchen-receipt-print');
+      $('receiptPrint').innerHTML = buildReceiptHtml(bill);
+      document.body.classList.add('print-receipt-mode');
+      printReceiptWhenReady();
+    }
+
+    async function printReceiptWhenReady() {
+      const images = [...$('receiptPrint').querySelectorAll('img')];
+      await Promise.all(images.map(async (image) => {
+        if (!image.complete) {
+          await new Promise((resolve) => {
+            image.addEventListener('load', resolve, { once: true });
+            image.addEventListener('error', resolve, { once: true });
+          });
+        }
+        if (image.decode) await image.decode().catch(() => {});
+      }));
+      await document.fonts?.ready;
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      setDynamicReceiptPageSize();
+      requestAnimationFrame(() => requestAnimationFrame(() => window.print()));
+    }
+
+    function setDynamicReceiptPageSize() {
+      const printArea = $('receiptPrint');
+      const paper = printArea.querySelector('.receipt-paper');
+      if (!paper) return;
+
+      printArea.classList.add('receipt-measuring');
+      const ruler = document.createElement('span');
+      ruler.className = 'receipt-mm-ruler';
+      ruler.setAttribute('aria-hidden', 'true');
+      printArea.appendChild(ruler);
+      const pixelsPerMm = ruler.getBoundingClientRect().width / 100;
+      const heightPx = Math.max(paper.scrollHeight, Math.ceil(paper.getBoundingClientRect().height));
+      ruler.remove();
+      printArea.classList.remove('receipt-measuring');
+
+      const measuredHeightMm = heightPx / (pixelsPerMm || (96 / 25.4));
+      const heightMm = Math.max(
+        35,
+        Math.ceil((measuredHeightMm + RECEIPT_HEIGHT_SAFETY_MM) * 10) / 10
+      );
+      let pageStyle = document.getElementById('receiptDynamicPageSize');
+      if (!pageStyle) {
+        pageStyle = document.createElement('style');
+        pageStyle.id = 'receiptDynamicPageSize';
+        document.head.appendChild(pageStyle);
+      }
+      pageStyle.textContent = `
+        @media print {
+          @page { size: ${RECEIPT_PAGE_WIDTH_MM}mm ${heightMm}mm; margin: 0; }
+          html, body {
+            width: ${RECEIPT_PAGE_WIDTH_MM}mm !important;
+            min-height: 0 !important;
+            height: auto !important;
+          }
+        }
+      `;
+    }
+
+    function printLastCheckoutReceipt() {
+      const latestHistoryBill = (state.snapshot.orderHistory || [])[0];
+      const bill = latestHistoryBill || state.lastCheckoutBill;
+
+      if (!bill) {
+        showToast('No paid bill available to print', 'danger');
+        return;
+      }
+
+      printCheckoutReceipt(bill);
+    }
+
+    function printHistoryBill(billId) {
+      const bill = (state.snapshot.orderHistory || []).find((item) => item.id === billId);
+      if (!bill) {
+        showToast('Bill not found in history', 'danger');
+        return;
+      }
+      printCheckoutReceipt(bill);
+    }
+
+    function clearHistory() {
+      if (!confirm('Clear all paid bill history?')) return;
+      state.socket.emit('clear_all_history', (response) => {
+        if (!response || !response.ok) {
+          return showToast('Could not clear history', 'danger');
+        }
+        state.lastCheckoutBill = null;
+        showToast('Sales history cleared', 'success');
+      });
+    }
+
+    function showToast(message, type) {
+      const toast = $('toast');
+      toast.textContent = message;
+      toast.className = `notice ${type === 'danger' ? 'danger' : 'success'}`;
+      toast.classList.remove('hidden');
+      clearTimeout(window.__toastTimeout);
+      window.__toastTimeout = setTimeout(() => toast.classList.add('hidden'), 4200);
+    }
+
+    function formatDate(value) {
+      if (!value) return '';
+      return new Date(value).toLocaleString([], {
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+
+    function formatOrderDateTime(value) {
+      if (!value) return 'وخت نشته';
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return 'وخت نشته';
+      return date.toLocaleString('en-GB', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      }).replace(/\b(am|pm)\b/i, (marker) => marker.toUpperCase());
+    }
+
+    function formatReceiptDate(value) {
+      const date = value ? new Date(value) : new Date();
+      return date.toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      });
+    }
+
+    function receiptMoney(value) {
+      return Math.round(Number(value) || 0).toLocaleString();
+    }
+
+    function formatReceiptTime(value) {
+      const date = value ? new Date(value) : new Date();
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function loadPrintLog() {
+      try {
+        const items = JSON.parse(localStorage.getItem(PRINT_LOG_KEY) || '[]');
+        return Array.isArray(items) ? items : [];
+      } catch (error) {
+        return [];
+      }
+    }
+
+    function getOrderPrintInfo(orderId) {
+      return state.printLog.find((item) => item.orderId === orderId) || null;
+    }
+
+    function recordCounterPrint(order) {
+      const current = Number(localStorage.getItem(PRINT_COUNTER_KEY)) || 0;
+      const existing = getOrderPrintInfo(order.id);
+      const printInfo = {
+        orderId: order.id,
+        printNumber: current + 1,
+        printedAt: new Date().toISOString(),
+        printCount: existing ? (Number(existing.printCount) || 1) + 1 : 1,
+        previousPrintNumbers: existing
+          ? [...(existing.previousPrintNumbers || []), existing.printNumber].slice(-10)
+          : []
+      };
+      localStorage.setItem(PRINT_COUNTER_KEY, String(printInfo.printNumber));
+      state.printLog = [printInfo, ...state.printLog.filter((item) => item.orderId !== order.id)].slice(0, 200);
+      localStorage.setItem(PRINT_LOG_KEY, JSON.stringify(state.printLog));
+      return printInfo;
+    }
+
+    function buildOpenOrderReceiptHtml(order, printInfo) {
+      const createdAt = order.createdAt || new Date().toISOString();
+      const items = order.items || [];
+      const isDelivery = order.orderType === 'delivery';
+      const grandTotal = Math.max(0, Number(order.total) || items.reduce((sum, item) => (
+        sum + (Number(item.lineTotal) || Number(item.price) * Number(item.qty) || 0)
+      ), 0));
+      const tableLabel = formatReceiptTableLabel(order);
+      const orderNote = String(order.note || '').trim();
+      const infoRows = isDelivery
+        ? [
+            ['Date', formatReceiptDate(createdAt)],
+            ['Phone Number', order.customerPhone || '-'],
+            ['Customer Name', order.customerName || '-'],
+            ['Address', order.deliveryAddress || '-']
+          ]
+        : [
+            ['Date', formatReceiptDate(createdAt)],
+            [order.orderType === 'counter' || order.orderType === 'fake' ? 'Order' : 'Table', tableLabel]
+          ];
+      const itemRows = items.length ? items.map((item, index) => {
+        const qty = Number(item.qty) || 0;
+        const lineTotal = Number(item.lineTotal) || Number(item.price) * qty;
+        const unitPrice = Number(item.price) || (qty ? lineTotal / qty : 0);
+        return `<tr><td>${index + 1}</td><td class="receipt-simple-name">${escapeHtml(displayItemName(item.name))}</td><td>${qty}</td><td class="receipt-simple-price">${receiptMoney(unitPrice)}</td><td class="receipt-simple-price">${receiptMoney(lineTotal)}</td></tr>`;
+      }).join('') : '<tr><td class="receipt-simple-name" colspan="5">No items</td></tr>';
+
+      return `
+          <div class="receipt-paper receipt-simple kitchen-receipt">
+          <img class="receipt-simple-logo" src="/images/pizza-point-logo.png" alt="Pizza Point" />
+          <div class="receipt-simple-title">${escapeHtml(RECEIPT_CONFIG.name)}</div>
+          <div class="receipt-print-mark">پرینټ نمبر #${escapeHtml(printInfo.printNumber)}</div>
+          <div class="receipt-print-time">Printed at ${escapeHtml(formatReceiptTime(printInfo.printedAt))}</div>
+          <div class="receipt-simple-info">
+            ${infoRows.map(([label, value]) => `<div class="receipt-simple-info-row"><span>${escapeHtml(label)}:</span><strong>${escapeHtml(value)}</strong></div>`).join('')}
+          </div>
+          ${orderNote ? `
+            <div class="receipt-order-note">
+              <strong>اضافي نوټ:</strong>
+              <span>${escapeHtml(orderNote)}</span>
+            </div>
+          ` : ''}
+          <div class="receipt-simple-hr"></div>
+          <table class="receipt-simple-table">
+            <thead><tr><th>#</th><th>توکی</th><th>تعداد</th><th>فی نرخ</th><th>مجموعه</th></tr></thead>
+            <tbody>${itemRows}</tbody>
+          </table>
+          <div class="receipt-simple-hr"></div>
+          <div class="receipt-simple-total-line"><span>Total:</span><span>${receiptMoney(grandTotal)}</span></div>
+          <div class="receipt-simple-hr-double"></div>
+          <p class="receipt-simple-thanks">مهرباني بیل کونټر ته تسلیم کړی</p>
+          ${isDelivery ? '<p class="receipt-simple-thanks">مننه چي موږ مو انتخاب کړو</p>' : ''}
+        </div>`;
+    }
+
+    function automaticPrintedOrderIds() {
+      try {
+        const ids = JSON.parse(localStorage.getItem(AUTO_PRINTED_ORDERS_KEY) || '[]');
+        return Array.isArray(ids) ? ids : [];
+      } catch (_) {
+        return [];
+      }
+    }
+
+    function rememberAutomaticallyPrintedOrder(orderId) {
+      const ids = automaticPrintedOrderIds();
+      localStorage.setItem(
+        AUTO_PRINTED_ORDERS_KEY,
+        JSON.stringify([orderId, ...ids.filter((id) => id !== orderId)].slice(0, 300))
+      );
+    }
+
+    function queueOrderForAutomaticPrint(order) {
+      if (!order?.id || automaticPrintedOrderIds().includes(order.id)) return;
+      if (state.autoPrintQueue.some((queuedOrder) => queuedOrder.id === order.id)) return;
+      state.autoPrintQueue.push(order);
+      processAutomaticPrintQueue();
+    }
+
+    function processAutomaticPrintQueue() {
+      if (state.printInProgress || !state.autoPrintQueue.length) return;
+      const order = state.autoPrintQueue.shift();
+      rememberAutomaticallyPrintedOrder(order.id);
+      printOpenOrderObject(order);
+    }
+
+    function printOpenOrderObject(order) {
+      if (!order?.id || state.printInProgress) return;
+      state.printInProgress = true;
+      const printInfo = recordCounterPrint(order);
+      $('receiptPrint').classList.add('kitchen-receipt-print');
+      $('receiptPrint').innerHTML = buildOpenOrderReceiptHtml(order, printInfo);
+      document.body.classList.add('print-receipt-mode');
+      renderActiveTables();
+      printReceiptWhenReady();
+    }
+
+    function printOpenOrder(orderId) {
+      const order = (state.snapshot.activeOrders || []).find((item) => item.id === orderId);
+      if (!order) return showToast('Order not found', 'danger');
+      printOpenOrderObject(order);
+    }
+
+    function collectReceiptText(...values) {
+      const parts = [];
+      const push = (value) => {
+        if (Array.isArray(value)) {
+          value.forEach(push);
+          return;
+        }
+        const text = String(value ?? '').trim();
+        if (text && !parts.includes(text)) {
+          parts.push(text);
+        }
+      };
+
+      values.forEach(push);
+      return parts.join(' · ');
+    }
+
+    function formatInvoiceNumber(bill) {
+      const raw = String(bill.id || bill.orderIds?.[0] || Date.now());
+      const compact = raw.replace(/[^a-zA-Z0-9]/g, '').slice(-8).toUpperCase();
+      return compact ? `#${compact}` : '#00000000';
+    }
+
+    function formatReceiptTableLabel(bill) {
+      if (bill.orderType === 'delivery') return 'Delivery';
+      if (bill.orderType === 'fake') return 'فیک اډر';
+      if (bill.orderType === 'counter') return 'Counter Order';
+      const tableNo = bill.tableNumber || bill.table;
+      return tableNo != null && tableNo !== '' ? String(tableNo) : '-';
+    }
+
+    function buildReceiptHtml(bill) {
+      const paidAt = bill.paidAt || bill.checkoutTimestamp || new Date().toISOString();
+      const items = bill.items || [];
+      const customerNote = collectReceiptText(bill.note, bill.customerNote, bill.specialInstructions, bill.notes);
+      const grandTotal = Math.max(0, Number(bill.total) || items.reduce((sum, item) => (
+        sum + (Number(item.lineTotal) || Number(item.price) * Number(item.qty) || 0)
+      ), 0));
+      const tableLabel = formatReceiptTableLabel(bill);
+      const customerRows = [
+        ['Date', formatReceiptDate(paidAt)],
+        [bill.orderType === 'delivery' || bill.orderType === 'counter' || bill.orderType === 'fake' ? 'Order' : 'Table', tableLabel],
+        bill.customerName ? ['Customer', bill.customerName] : null,
+        bill.customerPhone ? ['Phone', bill.customerPhone] : null,
+        bill.deliveryAddress ? ['Address', bill.deliveryAddress] : null,
+        customerNote ? ['Note', customerNote] : null
+      ].filter(Boolean);
+
+      const itemRows = items.length
+        ? items.map((item, index) => {
+            const qty = Number(item.qty) || 0;
+            const lineTotal = Number(item.lineTotal) || Number(item.price) * qty;
+            const unitPrice = Number(item.price) || (qty ? lineTotal / qty : 0);
+            return `
+              <tr>
+                <td>${index + 1}</td>
+                <td class="receipt-simple-name">${escapeHtml(displayItemName(item.name))}</td>
+                <td>${qty}</td>
+                <td class="receipt-simple-price">${receiptMoney(unitPrice)}</td>
+                <td class="receipt-simple-price">${receiptMoney(lineTotal)}</td>
+              </tr>
+            `;
+          }).join('')
+        : '<tr><td class="receipt-simple-name" colspan="5">No items</td></tr>';
+
+      return `
+        <div class="receipt-paper receipt-simple">
+          <img class="receipt-simple-logo" src="/images/pizza-point-logo.png" alt="Pizza Point" />
+          <div class="receipt-simple-title">${escapeHtml(RECEIPT_CONFIG.name)}</div>
+
+          <div class="receipt-simple-info">
+            ${customerRows.map(([label, value]) => `
+              <div class="receipt-simple-info-row">
+                <span>${escapeHtml(label)}:</span>
+                <strong>${escapeHtml(value)}</strong>
+              </div>
+            `).join('')}
+          </div>
+
+          <div class="receipt-simple-hr"></div>
+
+          <table class="receipt-simple-table">
+            <thead><tr><th>#</th><th>توکی</th><th>تعداد</th><th>فی نرخ</th><th>مجموعه</th></tr></thead>
+            <tbody>${itemRows}</tbody>
+          </table>
+
+          <div class="receipt-simple-hr"></div>
+
+          <div class="receipt-simple-total-line">
+            <span>Total:</span>
+            <span>${receiptMoney(grandTotal)}</span>
+          </div>
+
+          <div class="receipt-simple-hr-double"></div>
+
+          <p class="receipt-simple-thanks">مننه چي موږ مو انتخاب کړو</p>
+
+          <div class="receipt-simple-hr"></div>
+
+          <p class="receipt-simple-phone">${escapeHtml(RECEIPT_CONFIG.phone)}</p>
+        </div>
+      `;
+    }
+
+    window.addEventListener('afterprint', () => {
+      document.body.classList.remove('print-receipt-mode');
+      $('receiptPrint').classList.remove('kitchen-receipt-print');
+      document.getElementById('receiptDynamicPageSize')?.remove();
+      state.printInProgress = false;
+      setTimeout(processAutomaticPrintQueue, 150);
+    });
+
+    $('loginButton').addEventListener('click', checkPassword);
+    document.addEventListener('pointerdown', enableOrderAlertSound, { once: true });
+    document.addEventListener('keydown', enableOrderAlertSound, { once: true });
+    $('counterPassword').addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') checkPassword();
+    });
+    $('activeTables').addEventListener('click', (event) => {
+      const printButton = event.target.closest('[data-print-order]');
+      if (printButton) {
+        printOpenOrder(printButton.dataset.printOrder);
+        return;
+      }
+
+      const saveButton = event.target.closest('[data-save-prices]');
+      if (saveButton) {
+        saveTablePrices(saveButton.dataset.savePrices);
+        return;
+      }
+
+      const button = event.target.closest('[data-checkout]');
+      if (!button) return;
+      checkoutTable(button.dataset.checkout);
+    });
+    $('historyList').addEventListener('click', (event) => {
+      const printButton = event.target.closest('[data-print-bill]');
+      if (!printButton) return;
+      printHistoryBill(printButton.dataset.printBill);
+    });
+    $('clearHistoryButton').addEventListener('click', clearHistory);
+    $('printButton').addEventListener('click', printLastCheckoutReceipt);
+    $('toggleMenuManagerButton').addEventListener('click', () => {
+      setMenuManagerVisible($('counterMenuManager').classList.contains('hidden'));
+    });
+    $('hideMenuManagerButton').addEventListener('click', () => setMenuManagerVisible(false));
+    $('menuGroupId').addEventListener('change', updateMenuCategoryHint);
+    $('counterMenuForm').addEventListener('submit', saveNewMenuItem);
+    $('counterCustomMenuItems').addEventListener('click', (event) => {
+      const saveButton = event.target.closest('[data-save-menu-price]');
+      if (saveButton) {
+        saveMenuPrice(saveButton.dataset.saveMenuPrice, saveButton);
+        return;
+      }
+      const button = event.target.closest('[data-delete-menu-item]');
+      if (button) deleteCounterMenuItem(button.dataset.deleteMenuItem);
+    });
+    $('menuSearch').addEventListener('input', renderAllMenuItems);
+    $('logoutButton').addEventListener('click', window.KandaharAuth.logout);
+    fillMenuCategories();
+    loadCounterCustomMenu();
+    checkExistingLogin();
+  </script>
+</body>
+</html>

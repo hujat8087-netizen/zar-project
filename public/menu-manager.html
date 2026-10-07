@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="ps" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#18202f" />
+  <title>د مینیو مدیریت | Zarchinar Restaurant</title>
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="stylesheet" href="/styles.css" />
+  <script src="/theme.js"></script>
+  <script src="/auth.js?v=2"></script>
+  <script src="/menu-custom.js?v=48"></script>
+  <script src="/menu-data.js?v=65"></script>
+</head>
+<body>
+  <div id="app" class="app-shell hidden">
+    <header class="app-header">
+      <div class="header-inner">
+        <a class="brand-block" href="/counter.html">
+          <span class="brand-mark" aria-hidden="true">ار</span>
+          <div class="brand-text">
+            <p class="eyebrow">Counter Manager</p>
+            <h1 class="brand-title">د مینیو مدیریت</h1>
+            <p class="brand-subtitle">نوي خواړه او قیمتونه دایمي ثبت کړئ</p>
+          </div>
+        </a>
+        <div class="header-end">
+          <nav class="header-nav" aria-label="مدیر مینیو">
+            <div class="nav-pills">
+              <a class="nav-link" href="/counter.html">کونټر</a>
+              <a class="nav-link" href="/counter-order.html">کونټر ارډر</a>
+              <a class="nav-link active" href="/menu-manager.html">مینیو مدیریت</a>
+            </div>
+          </nav>
+          <button id="logoutButton" class="tool-button" type="button">وتل</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="page menu-manager-page">
+      <div class="dashboard-grid">
+        <section class="panel span-5">
+          <div class="panel-header">
+            <div>
+              <h2 class="panel-title">نوی خوراک اضافه کړئ</h2>
+              <p class="panel-kicker">یوازې مدیر/کونټر دا فورمه کارولای شي</p>
+            </div>
+          </div>
+          <form id="menuForm" class="menu-manager-form">
+            <div class="field">
+              <label for="groupId">کټګوري / برخه</label>
+              <select id="groupId" class="select" required></select>
+              <small id="categoryHint" class="field-hint"></small>
+            </div>
+            <div class="field">
+              <label for="itemName">د خوراک نوم</label>
+              <input id="itemName" class="input" type="text" maxlength="100" placeholder="مثال: سپیشل چکن برګر" required />
+            </div>
+            <div class="field">
+              <label for="englishName">انګلیسي نوم (اختیاري)</label>
+              <input id="englishName" class="input" type="text" maxlength="100" placeholder="Special Chicken Burger" />
+            </div>
+            <div class="field">
+              <label for="itemPrice">قیمت په افغانۍ</label>
+              <input id="itemPrice" class="input" type="number" min="1" max="1000000" step="1" inputmode="numeric" placeholder="150" required />
+            </div>
+            <button id="saveButton" class="button success" type="submit">دایمي ذخیره کول</button>
+          </form>
+          <div id="message" class="notice hidden" style="margin-top:16px"></div>
+        </section>
+
+        <section class="panel span-7">
+          <div class="panel-header">
+            <div>
+              <h2 class="panel-title">اضافه شوي توکي</h2>
+              <p class="panel-kicker">دا توکي په ټولو ارډر پاڼو کې ښکاري</p>
+            </div>
+            <span id="itemCount" class="chip">0 توکي</span>
+          </div>
+          <div id="customItems" class="orders-list"></div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const MANAGER_PASSWORD = 'zar123@@';
+    const groups = window.AsadBurgerKingMenuGroups || [];
+    const filterNames = {
+      food: 'خواړه', deals: 'ډیلونه', drinks: 'مشروبات', tea: 'چای او کافي', dessert: 'شیریني او آیسکریم'
+    };
+    const $ = (id) => document.getElementById(id);
+    const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+    }[char]));
+
+    if (window.KandaharAuth.currentRole() !== 'counter') {
+      window.location.replace('/');
+    } else {
+      $('app').classList.remove('hidden');
+    }
+
+    function fillCategories() {
+      const byFilter = groups.reduce((result, group) => {
+        (result[group.filter] ||= []).push(group);
+        return result;
+      }, {});
+      $('groupId').innerHTML = Object.entries(byFilter).map(([filter, entries]) => `
+        <optgroup label="${escapeHtml(filterNames[filter] || filter)}">
+          ${entries.map((group) => `<option value="${escapeHtml(group.id)}">${escapeHtml(group.localName)} — ${escapeHtml(group.name)}</option>`).join('')}
+        </optgroup>
+      `).join('');
+      updateCategoryHint();
+    }
+
+    function updateCategoryHint() {
+      const group = groups.find((entry) => entry.id === $('groupId').value);
+      $('categoryHint').textContent = group
+        ? `توکی به د «${group.localName}» په برخه کې ښکاره شي.`
+        : '';
+    }
+
+    function showMessage(text, type = 'success') {
+      $('message').textContent = text;
+      $('message').className = `notice ${type === 'danger' ? 'danger' : 'success'}`;
+    }
+
+    async function api(url, options = {}) {
+      const response = await fetch(url, {
+        ...options,
+        headers: { 'Content-Type': 'application/json', 'x-manager-password': MANAGER_PASSWORD, ...(options.headers || {}) }
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.message || 'ذخیره کول ناکام شول.');
+      return data;
+    }
+
+    async function loadItems() {
+      try {
+        const data = await api('/api/menu/custom');
+        const items = data.items || [];
+        $('itemCount').textContent = `${items.length} توکي`;
+        $('customItems').innerHTML = items.length ? items.slice().reverse().map((item) => {
+          const group = groups.find((entry) => entry.id === item.groupId);
+          return `<article class="order-card menu-manager-item">
+            <div>
+              <h3 class="card-title">${escapeHtml(item.name)}</h3>
+              <p class="card-subtitle">${escapeHtml(group?.localName || item.groupId)} · ${Number(item.price).toLocaleString()} AFN</p>
+            </div>
+            <button class="button danger" type="button" data-delete="${escapeHtml(item.id)}">حذف</button>
+          </article>`;
+        }).join('') : '<div class="empty-state">تر اوسه نوی توکی نشته.</div>';
+      } catch (error) {
+        showMessage(error.message, 'danger');
+      }
+    }
+
+    async function saveItem(event) {
+      event.preventDefault();
+      const button = $('saveButton');
+      button.disabled = true;
+      try {
+        await api('/api/menu/custom', {
+          method: 'POST',
+          body: JSON.stringify({
+            groupId: $('groupId').value,
+            name: $('itemName').value.trim(),
+            englishName: $('englishName').value.trim(),
+            price: Number($('itemPrice').value)
+          })
+        });
+        $('itemName').value = '';
+        $('englishName').value = '';
+        $('itemPrice').value = '';
+        showMessage('توکی دایمي ذخیره شو او خپلې کټګورۍ ته اضافه شو.');
+        await loadItems();
+      } catch (error) {
+        showMessage(error.message, 'danger');
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    async function deleteItem(itemId) {
+      if (!confirm('دا توکی له مینیو څخه حذف شي؟')) return;
+      try {
+        await api(`/api/menu/custom/${encodeURIComponent(itemId)}`, { method: 'DELETE' });
+        showMessage('توکی له مینیو څخه حذف شو.');
+        await loadItems();
+      } catch (error) {
+        showMessage(error.message, 'danger');
+      }
+    }
+
+    fillCategories();
+    loadItems();
+    $('groupId').addEventListener('change', updateCategoryHint);
+    $('menuForm').addEventListener('submit', saveItem);
+    $('customItems').addEventListener('click', (event) => {
+      const button = event.target.closest('[data-delete]');
+      if (button) deleteItem(button.dataset.delete);
+    });
+    $('logoutButton').addEventListener('click', () => window.KandaharAuth.logout());
+  </script>
+</body>
+</html>

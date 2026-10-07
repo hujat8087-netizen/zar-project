@@ -1,0 +1,1341 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#18202f" />
+  <title>Waiter | Zarchinar Restaurant</title>
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="stylesheet" href="/styles.css" />
+  <script src="/theme.js"></script>
+  <script src="/password-toggle.js"></script>
+  <script src="/auth.js?v=3"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/menu-custom.js?v=48"></script>
+  <script src="/menu-data.js?v=65"></script>
+</head>
+<body>
+  <section id="loginScreen" class="login-screen">
+    <div class="login-panel">
+      <p class="eyebrow">Zarchinar Restaurant</p>
+      <h1>د ویټر ننوتل</h1>
+      <p>Waiter station</p>
+      <div class="field">
+        <label for="waiterPassword">Password</label>
+        <div class="password-field">
+          <input id="waiterPassword" class="input" type="password" autocomplete="current-password" placeholder="Enter password" />
+          <button type="button" class="password-toggle" data-password-toggle aria-controls="waiterPassword" aria-label="Show password" aria-pressed="false">Show</button>
+        </div>
+      </div>
+      <div style="height: 12px"></div>
+      <button id="loginButton" class="button primary" type="button">Login</button>
+      <div id="loginMessage" class="notice danger hidden" style="margin-top: 12px"></div>
+    </div>
+  </section>
+
+  <div id="app" class="app-shell hidden">
+    <header class="app-header">
+      <div class="header-inner">
+        <a class="brand-block" href="/">
+          <span class="brand-mark" aria-hidden="true">ار</span>
+          <div class="brand-text">
+            <p class="eyebrow">Waiter Station</p>
+            <h1 class="brand-title">Zarchinar Restaurant</h1>
+            <p class="brand-subtitle">Order entry, table status, and pickup alerts</p>
+          </div>
+        </a>
+
+        <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="appNav" aria-label="Open menu">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+
+        <div class="header-end" id="appNav">
+          <nav class="header-nav" aria-label="Role navigation">
+            <div class="nav-pills">
+              <a class="nav-link" href="/">Home</a>
+              <a class="nav-link active" href="/waiter.html">Waiter</a>
+              <a class="nav-link" href="/delivery.html">Delivery</a>
+              <a class="nav-link" href="/fake-order.html">فیک اډر</a>
+              <a class="nav-link" href="/counter.html">Counter</a>
+            </div>
+          </nav>
+          <div class="header-tools">
+            <span id="offlineBadge" class="status-chip warning">Checking</span>
+            <button id="logoutButton" class="tool-button" type="button">Logout</button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div id="readyBanner" class="ready-banner hidden"></div>
+
+    <main class="page">
+      <div class="page-grid">
+        <section class="panel">
+          <div class="panel-header">
+            <div>
+              <h2 class="panel-title">New Order</h2>
+              <p class="panel-kicker">نوی ارډر</p>
+            </div>
+            <span id="connectionStatus" class="chip warning">Connecting</span>
+          </div>
+
+          <div class="field-grid">
+            <div class="field">
+              <label for="waiterName">Waiter name / د ویټر نوم</label>
+              <input id="waiterName" class="input" type="text" placeholder="Ahmad" autocomplete="name" />
+            </div>
+            <div class="field">
+              <label for="orderNote">اضافي نوټ / Additional note</label>
+              <input id="orderNote" class="input" type="text" maxlength="250" placeholder="مثال: فیک اډر، کم مالګه، پارسل..." />
+            </div>
+          </div>
+
+          <div style="height: 18px"></div>
+
+          <div class="panel-header">
+            <div>
+              <h2 class="panel-title">Tables</h2>
+              <p class="panel-kicker">میزونه</p>
+            </div>
+            <span id="selectedTableLabel" class="chip">No table</span>
+          </div>
+          <div id="tableGrid" class="table-grid"></div>
+
+          <div style="height: 18px"></div>
+
+          <section class="menu-section" id="menuSection">
+            <div class="menu-section-head" id="menuSectionHead">
+              <div class="panel-header menu-panel-header">
+                <div>
+                  <h2 class="panel-title">Menu</h2>
+                  <p class="panel-kicker">مینو</p>
+                </div>
+                <button id="clearOrderButton" class="button ghost menu-clear-btn" type="button">Clear</button>
+              </div>
+              <div id="menuFilters" class="menu-filters" role="tablist" aria-label="Menu categories">
+                <button class="menu-filter active" type="button" data-filter="food" role="tab" aria-selected="true">خواړه</button>
+                <button class="menu-filter" type="button" data-filter="deals" role="tab" aria-selected="false">ډیلونه</button>
+                <button class="menu-filter" type="button" data-filter="drinks" role="tab" aria-selected="false">مشروباط</button>
+                <button class="menu-filter" type="button" data-filter="tea" role="tab" aria-selected="false">چای او کاپي</button>
+                <button class="menu-filter" type="button" data-filter="dessert" role="tab" aria-selected="false">شیریخ او آیسکریم</button>
+              </div>
+            </div>
+            <div id="menuList" class="menu-list"></div>
+            <button id="menuBackTopButton" class="menu-back-top" type="button" aria-label="سر ته بیرته">
+              <span class="menu-back-top-icon" aria-hidden="true">↑</span>
+              <span>سر ته</span>
+            </button>
+          </section>
+        </section>
+
+        <aside class="panel">
+          <div class="panel-header">
+            <div>
+              <h2 class="panel-title">Ticket</h2>
+              <p class="panel-kicker">بل</p>
+            </div>
+            <span id="ticketCount" class="chip">0 items</span>
+          </div>
+
+          <div id="summaryList" class="summary-list"></div>
+          <div class="summary-total">
+            <span>Total</span>
+            <span id="summaryTotal">0 AFN</span>
+          </div>
+
+          <div style="height: 14px"></div>
+          <button id="sendOrderButton" class="button success" type="button">Send Order</button>
+
+          <div style="height: 14px"></div>
+          <section class="table-control" id="sentOrderEditorSection">
+            <div>
+              <h3 class="panel-title">Edit Sent Order</h3>
+              <p class="panel-kicker">لیږل شوي ارډر دلته سم کړئ · Edit sent tickets</p>
+            </div>
+            <div id="tableOrdersEditor" class="summary-list"></div>
+          </section>
+
+          <div id="toast" class="notice hidden" style="margin-top: 12px"></div>
+
+          <div style="height: 18px"></div>
+          <div class="notice">
+            <strong id="openOrdersCount">0</strong> open orders across the floor
+          </div>
+
+          <div style="height: 14px"></div>
+          <section class="table-control">
+            <div>
+              <h3 class="panel-title">Table Status</h3>
+              <p id="tableStatusText" class="panel-kicker">No table selected</p>
+            </div>
+            <button id="freeTableButton" class="button danger" type="button" disabled>Mark Table Free</button>
+          </section>
+
+          <div style="height: 14px"></div>
+          <section class="table-control">
+            <div>
+              <h3 class="panel-title">Ready Alerts</h3>
+              <p id="readyAlertStatus" class="panel-kicker">Waiter name must match the order name</p>
+            </div>
+            <button id="enableAlertsButton" class="button primary" type="button">Enable Alerts</button>
+            <div id="readyAlertsList" class="summary-list"></div>
+          </section>
+        </aside>
+      </div>
+    </main>
+  </div>
+
+  <script src="/header-nav.js"></script>
+  <script src="/offline.js"></script>
+  <script>
+    const PAGE_ROLE = 'waiter';
+    const tableCount = 39;
+    const menuGroups = window.AsadBurgerKingMenuGroups || [];
+
+    function getGroupVariants(group) {
+      const expandVariants = (variants) => variants.flatMap((variant) => getSelectableVariants(variant));
+      if (group.sections) {
+        return group.sections.flatMap((section) => expandVariants(section.variants));
+      }
+      return expandVariants(group.variants || []);
+    }
+
+    function getSelectableVariants(variant, group = variant.group, section = variant.section) {
+      if (!Array.isArray(variant.priceOptions) || !variant.priceOptions.length) {
+        return [{ ...variant, group, section }];
+      }
+
+      return variant.priceOptions.map((price) => ({
+        ...variant,
+        id: `${variant.id}-${price}`,
+        parentId: variant.id,
+        price,
+        priceOption: price,
+        group,
+        section
+      }));
+    }
+
+    function flattenMenuVariants() {
+      return menuGroups.flatMap((group) => {
+        if (group.sections) {
+          return group.sections.flatMap((section) => section.variants.flatMap((variant) => getSelectableVariants(variant, group, section)));
+        }
+        return (group.variants || []).flatMap((variant) => getSelectableVariants(variant, group, null));
+      });
+    }
+
+    const allMenuVariants = flattenMenuVariants();
+
+    const state = {
+      socket: null,
+      selectedTable: null,
+      audioContext: null,
+      alertsEnabled: false,
+      readyAlerts: [],
+      orderDrafts: {},
+      savingOrderIds: new Set(),
+      quantities: Object.fromEntries(allMenuVariants.map((variant) => [variant.id, 0])),
+      menuFilter: 'food',
+      expandedMenuGroup: null,
+      expandedPriceRows: new Set(),
+      menuHeadVisible: true,
+      snapshot: { activeOrders: [], stats: {} }
+    };
+
+    let menuBackTopObserver = null;
+
+    const $ = (id) => document.getElementById(id);
+    const money = (value) => `${Math.round(Number(value) || 0).toLocaleString()} AFN`;
+    const menuImageSrc = (image) => {
+      if (!image) return '';
+      return image.startsWith('/') ? image : `/images/${image}`;
+    };
+    const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#039;'
+    }[char]));
+
+    function displayItemName(value) {
+      let text = String(value ?? '').trim();
+      if (!text) return '';
+
+      if (text.includes('·')) {
+        const parts = text.split('·').map((part) => part.trim()).filter(Boolean);
+        if (parts.length > 2) {
+          text = parts.slice(2).join(' ');
+        } else {
+          text = parts.join(' ');
+        }
+      }
+
+      if (text.includes('/')) {
+        const parts = text.split('/').map((part) => part.trim()).filter(Boolean);
+        if (parts.length > 1) {
+          text = parts[0];
+        }
+      }
+
+      const platterSuffixMatch = text.match(/^نفري\s*-\s*(.+?)\s*([۰-۹٠-٩0-9]+)$/);
+      const platterPrefixMatch = text.match(/^([۰-۹٠-٩0-9]+)\s*نفري\s*-\s*(.+)$/);
+      if (platterSuffixMatch) {
+        text = `${platterSuffixMatch[1]} ${platterSuffixMatch[2]} نفری`;
+      } else if (platterPrefixMatch) {
+        text = `${platterPrefixMatch[2]} ${platterPrefixMatch[1]} نفری`;
+      }
+
+      return text.replace(/\s+/g, ' ').trim();
+    }
+
+    function variantOrderName(variant) {
+      if (!variant.size) return displayItemName(variant.label);
+      return `${displayItemName(variant.label)} — ${variant.size}`;
+    }
+
+    async function checkPassword() {
+      const role = await window.KandaharAuth.loginWithPassword($('waiterPassword').value);
+      if (!role) {
+        $('loginMessage').textContent = 'غلط پاسورډ / Incorrect password';
+        $('loginMessage').classList.remove('hidden');
+        return;
+      }
+
+      if (role.key !== PAGE_ROLE) {
+        window.KandaharAuth.redirectToRole(role.key);
+        return;
+      }
+
+      window.KandaharAuth.showLoginIntro(role, unlockPage);
+    }
+
+    function unlockPage() {
+      $('loginScreen').classList.add('hidden');
+      $('app').classList.remove('hidden');
+      $('waiterName').value = localStorage.getItem('waiterName') || '';
+      enableAlerts(false);
+      startApp();
+    }
+
+    function checkExistingLogin() {
+      const roleKey = window.KandaharAuth.currentRole();
+      if (!roleKey) return;
+      if (roleKey !== PAGE_ROLE) {
+        window.KandaharAuth.redirectToRole(roleKey);
+        return;
+      }
+      unlockPage();
+    }
+
+    function startApp() {
+      if (state.socket) return;
+      renderTables();
+      renderMenu();
+      renderSummary();
+      renderReadyAlerts();
+      setupMenuBackTop();
+
+      state.socket = io({ transports: ['websocket', 'polling'] });
+      state.socket.on('connect', () => {
+        $('connectionStatus').textContent = 'Live';
+        $('connectionStatus').className = 'chip ready';
+        state.socket.emit('request_snapshot');
+      });
+      state.socket.on('disconnect', () => {
+        $('connectionStatus').textContent = 'Offline';
+        $('connectionStatus').className = 'chip warning';
+      });
+      state.socket.on('snapshot', (snapshot) => {
+        state.snapshot = snapshot || state.snapshot;
+        renderTables();
+        renderSummary();
+        renderTableControl();
+        renderTableOrdersEditor();
+      });
+      state.socket.on('order_ready_notification', handleReadyNotification);
+      state.socket.on('table_freed', handleTableFreed);
+      state.socket.on('app_error', (error) => showToast(error.message || 'Server error', 'danger'));
+      state.socket.on('menu_updated', (update) => {
+        if (window.AsadBurgerKingApplyMenuUpdate && window.AsadBurgerKingApplyMenuUpdate(update)) {
+          renderMenu();
+          showToast(update.action === 'added' ? 'نوی خوراک مینیو ته اضافه شو' : 'مینیو تازه شو', 'success');
+        }
+      });
+      window.addEventListener('asad-menu-prices-updated', renderMenu);
+
+      $('waiterName').addEventListener('input', () => localStorage.setItem('waiterName', $('waiterName').value.trim()));
+    }
+
+    function renderTables() {
+      const grid = $('tableGrid');
+      const activeOrders = state.snapshot.activeOrders || [];
+      grid.innerHTML = '';
+
+      for (let table = 1; table <= tableCount; table += 1) {
+        const tableOrders = activeOrders.filter((order) => Number(order.tableNumber) === table);
+        const readyCount = tableOrders.filter((order) => order.status === 'ready').length;
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = `table-button${state.selectedTable === table ? ' selected' : ''}${tableOrders.length ? ' open' : ''}${tableOrders.length && readyCount === tableOrders.length ? ' ready' : ''}`;
+        button.dataset.table = String(table);
+        button.innerHTML = `
+          <strong>Table ${table}</strong>
+          <span>${tableOrders.length ? `${readyCount}/${tableOrders.length} ready` : 'Free'}</span>
+        `;
+        grid.appendChild(button);
+      }
+
+      $('selectedTableLabel').textContent = state.selectedTable ? `Table ${state.selectedTable}` : 'No table';
+      $('openOrdersCount').textContent = activeOrders.length;
+      renderTableControl();
+      renderTableOrdersEditor();
+    }
+
+    function getGroupQty(group) {
+      return getGroupVariants(group).reduce((sum, variant) => sum + (state.quantities[variant.id] || 0), 0);
+    }
+
+    function formatVariantPrice(variant) {
+      if (Array.isArray(variant.priceOptions) && variant.priceOptions.length) {
+        return variant.priceOptions.map((price) => Math.round(Number(price) || 0)).join(' / ') + ' AFN';
+      }
+      if (variant.priceNote) return `${variant.priceNote} AFN`;
+      return money(variant.price);
+    }
+
+    function usesMenuCardLayout(group) {
+      return ['biryani', 'kebab', 'burger', 'shawarma', 'platter', 'chips', 'roll', 'tea', 'drinks', 'juice', 'icecream'].includes(group.theme);
+    }
+
+    function renderVariantRow(variant, group) {
+      const optionVariants = getSelectableVariants(variant, group);
+      const hasPriceOptions = Array.isArray(variant.priceOptions) && variant.priceOptions.length;
+      const qty = optionVariants.reduce((sum, option) => sum + (state.quantities[option.id] || 0), 0);
+      const rowLabel = variant.labelEn || variant.label;
+
+      if (usesMenuCardLayout(group)) {
+        const theme = group.theme;
+        const priceOptionsOpen = hasPriceOptions && (state.expandedPriceRows.has(variant.id) || qty > 0);
+        return `
+          <div class="menu-variant-row menu-variant-row--${theme}${hasPriceOptions ? ' menu-variant-row--has-options' : ''}${priceOptionsOpen ? ' is-price-open' : ''}${qty > 0 ? ' is-active' : ''}" tabindex="${hasPriceOptions ? '0' : '-1'}">
+            <div class="menu-variant-main menu-variant-main--card">
+              <span class="menu-price-badge menu-price-badge--${theme}">${escapeHtml(formatVariantPrice(variant))}</span>
+              <div class="menu-variant-copy">
+                <strong dir="rtl">${escapeHtml(variant.label)}${variant.size ? ` — ${escapeHtml(variant.size)}` : ''}</strong>
+                ${variant.labelEn ? `<span>${escapeHtml(variant.labelEn)}</span>` : ''}
+              </div>
+            </div>
+            ${hasPriceOptions ? `
+              <button class="button ghost menu-price-options-toggle" type="button" data-action="price-options" data-id="${escapeHtml(variant.id)}">
+                ${priceOptionsOpen ? 'قیمتونه پټ کړه' : 'قیمتونه ښکاره کړه'}
+              </button>
+              <div class="menu-price-options" aria-label="${escapeHtml(rowLabel)} price options">
+                ${optionVariants.map((option) => {
+                  const optionQty = state.quantities[option.id] || 0;
+                  return `
+                    <div class="menu-price-option${optionQty > 0 ? ' is-active' : ''}">
+                      <span class="menu-price-option-badge">${escapeHtml(money(option.price))}</span>
+                      <div class="stepper" aria-label="${escapeHtml(rowLabel)} ${escapeHtml(money(option.price))} quantity">
+                        <button class="icon-button stepper-btn" type="button" data-action="qty" data-id="${escapeHtml(option.id)}" data-delta="-1" title="Decrease">−</button>
+                        <span id="qty-${escapeHtml(option.id)}" class="stepper-value">${optionQty}</span>
+                        <button class="icon-button stepper-btn" type="button" data-action="qty" data-id="${escapeHtml(option.id)}" data-delta="1" title="Increase">+</button>
+                      </div>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            ` : `
+              <div class="stepper" aria-label="${escapeHtml(rowLabel)} quantity">
+                <button class="icon-button stepper-btn" type="button" data-action="qty" data-id="${escapeHtml(variant.id)}" data-delta="-1" title="Decrease">−</button>
+                <span id="qty-${escapeHtml(variant.id)}" class="stepper-value">${qty}</span>
+                <button class="icon-button stepper-btn" type="button" data-action="qty" data-id="${escapeHtml(variant.id)}" data-delta="1" title="Increase">+</button>
+              </div>
+            `}
+          </div>
+        `;
+      }
+
+      return `
+        <div class="menu-variant-row${qty > 0 ? ' is-active' : ''}">
+          <div class="menu-variant-main menu-variant-main--simple">
+            <div class="menu-variant-copy">
+              <strong dir="rtl">${escapeHtml(variant.label)}${variant.size ? ` — ${escapeHtml(variant.size)}` : ''}</strong>
+            </div>
+            <span class="menu-price">${escapeHtml(formatVariantPrice(variant))}</span>
+          </div>
+          <div class="stepper" aria-label="${escapeHtml(rowLabel)} quantity">
+            <button class="icon-button stepper-btn" type="button" data-action="qty" data-id="${escapeHtml(variant.id)}" data-delta="-1" title="Decrease">−</button>
+            <span id="qty-${escapeHtml(variant.id)}" class="stepper-value">${qty}</span>
+            <button class="icon-button stepper-btn" type="button" data-action="qty" data-id="${escapeHtml(variant.id)}" data-delta="1" title="Increase">+</button>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderGroupVariants(group) {
+      const sectionTheme = group.theme ? ` menu-variant-section--${group.theme}` : '';
+
+      if (group.sections) {
+        return group.sections.map((section) => `
+          <section class="menu-variant-section${sectionTheme}">
+            <div class="menu-variant-section-head">
+              <h4 class="menu-section-title">${escapeHtml(section.titleLocal)}</h4>
+              <span class="menu-section-sub">${escapeHtml(section.title)}</span>
+            </div>
+            <div class="menu-section-items">
+              ${section.variants.map((variant) => renderVariantRow(variant, group)).join('')}
+            </div>
+          </section>
+        `).join('');
+      }
+
+      return (group.variants || []).map((variant) => renderVariantRow(variant, group)).join('');
+    }
+
+    function renderMenu() {
+      const groups = menuGroups.filter((group) => group.filter === state.menuFilter);
+
+      if (!groups.length) {
+        $('menuList').innerHTML = '<div class="menu-empty empty-state compact">په دې برخه کې توکی نشته</div>';
+        return;
+      }
+
+      $('menuList').innerHTML = groups.map((group) => {
+        const isOpen = state.expandedMenuGroup === group.id;
+        const groupQty = getGroupQty(group);
+        const groupClass = group.sections ? ` menu-group-rich${group.theme ? ` menu-group--${group.theme}` : ''}` : '';
+        return `
+        <article class="menu-group${groupClass}${isOpen ? ' is-open' : ''}${groupQty > 0 ? ' is-selected' : ''}" data-group="${escapeHtml(group.id)}">
+          <button class="menu-group-toggle" type="button" data-group-toggle="${escapeHtml(group.id)}" aria-expanded="${isOpen ? 'true' : 'false'}">
+            <div class="menu-image-wrap">
+              <img class="menu-image" src="${escapeHtml(menuImageSrc(group.image))}" alt="${escapeHtml(group.name)}" loading="lazy" />
+            </div>
+            <div class="menu-row-body">
+              <h3 class="menu-name">${escapeHtml(group.name)}</h3>
+              <p class="menu-local">${escapeHtml(group.localName)}</p>
+              ${group.sections ? `<p class="menu-hint">${group.sections.length} برخې · ${getGroupVariants(group).length} ډولونه</p>` : ''}
+            </div>
+            <span class="menu-badge${groupQty > 0 ? '' : ' hidden'}">${groupQty}</span>
+            <span class="menu-chevron" aria-hidden="true"></span>
+          </button>
+          <div class="menu-variants" id="menu-variants-${escapeHtml(group.id)}">
+            ${renderGroupVariants(group)}
+          </div>
+        </article>
+      `;
+      }).join('');
+    }
+
+    function toggleMenuGroup(groupId) {
+      const wasOpen = state.expandedMenuGroup === groupId;
+      state.expandedMenuGroup = wasOpen ? null : groupId;
+      renderMenu();
+
+      if (!wasOpen) {
+        requestAnimationFrame(() => {
+          const panel = document.getElementById(`menu-variants-${groupId}`);
+          if (panel) panel.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        });
+      }
+    }
+
+    function togglePriceOptions(variantId) {
+      if (state.expandedPriceRows.has(variantId)) {
+        state.expandedPriceRows.delete(variantId);
+      } else {
+        state.expandedPriceRows.add(variantId);
+      }
+      renderMenu();
+    }
+
+    function updateMenuQuantities(changedId) {
+      const changedVariant = allMenuVariants.find((variant) => variant.id === changedId);
+      if (changedVariant && changedVariant.parentId) {
+        renderMenu();
+        return;
+      }
+
+      const qty = state.quantities[changedId] || 0;
+      const qtyEl = document.getElementById(`qty-${changedId}`);
+
+      if (!qtyEl) {
+        renderMenu();
+        return;
+      }
+
+      qtyEl.textContent = qty;
+      const row = qtyEl.closest('.menu-variant-row');
+      if (row) row.classList.toggle('is-active', qty > 0);
+
+      menuGroups
+        .filter((group) => group.filter === state.menuFilter)
+        .forEach((group) => {
+          const groupEl = document.querySelector(`[data-group="${group.id}"]`);
+          if (!groupEl) return;
+
+          const groupQty = getGroupQty(group);
+          const badge = groupEl.querySelector('.menu-badge');
+          if (badge) {
+            badge.textContent = groupQty;
+            badge.classList.toggle('hidden', groupQty === 0);
+          }
+          groupEl.classList.toggle('is-selected', groupQty > 0);
+        });
+    }
+
+    function updateMenuBackTopButton() {
+      const button = $('menuBackTopButton');
+      if (!button) return;
+      const show = !state.menuHeadVisible && state.menuFilter === 'food';
+      button.classList.toggle('is-visible', show);
+    }
+
+    function scrollMenuToTop() {
+      const section = $('menuSection');
+      const top = Math.max(0, ((section && section.offsetTop) || 0) - 96);
+      window.scrollTo({ top, behavior: 'smooth' });
+    }
+
+    function setupMenuBackTop() {
+      const head = $('menuSectionHead');
+      const button = $('menuBackTopButton');
+      if (!head || !button) return;
+
+      if (!menuBackTopObserver) {
+        button.addEventListener('click', scrollMenuToTop);
+        menuBackTopObserver = new IntersectionObserver(([entry]) => {
+          state.menuHeadVisible = entry.isIntersecting;
+          updateMenuBackTopButton();
+        }, { threshold: 0, rootMargin: '-12px 0px 0px 0px' });
+        menuBackTopObserver.observe(head);
+      }
+
+      updateMenuBackTopButton();
+    }
+
+    function setMenuFilter(filterKey) {
+      state.menuFilter = filterKey;
+      state.expandedMenuGroup = null;
+      document.querySelectorAll('.menu-filter').forEach((button) => {
+        const active = button.dataset.filter === filterKey;
+        button.classList.toggle('active', active);
+        button.setAttribute('aria-selected', active ? 'true' : 'false');
+      });
+      renderMenu();
+      updateMenuBackTopButton();
+    }
+
+    function getSelectedItems() {
+      return allMenuVariants
+        .filter((variant) => state.quantities[variant.id] > 0)
+        .map((variant) => {
+          return {
+            id: variant.id,
+            name: variantOrderName(variant),
+            price: variant.price,
+            qty: state.quantities[variant.id],
+            image: menuImageSrc(variant.group.image)
+          };
+        });
+    }
+
+    function findMenuVariant(itemId) {
+      return allMenuVariants.find((variant) => variant.id === itemId);
+    }
+
+    function buildItemFromMenuVariant(variant, qty) {
+      return {
+        id: variant.id,
+        name: variantOrderName(variant),
+        price: variant.price,
+        qty,
+        quantity: qty,
+        image: menuImageSrc(variant.group.image),
+        lineTotal: variant.price * qty
+      };
+    }
+
+    function clearMenuSelection() {
+      Object.keys(state.quantities).forEach((id) => { state.quantities[id] = 0; });
+      renderMenu();
+      renderSummary();
+    }
+
+    function renderSummary() {
+      const items = getSelectedItems();
+      const total = items.reduce((sum, item) => sum + item.price * item.qty, 0);
+      $('ticketCount').textContent = `${items.reduce((sum, item) => sum + item.qty, 0)} items`;
+      $('summaryTotal').textContent = money(total);
+      $('sendOrderButton').disabled = !items.length;
+
+      if (!items.length) {
+        $('summaryList').innerHTML = '<div class="empty-state">No items selected</div>';
+        return;
+      }
+
+      $('summaryList').innerHTML = items.map((item) => `
+        <div class="summary-line">
+          <div>
+            <strong>${escapeHtml(item.qty)} × ${escapeHtml(displayItemName(item.name))}</strong>
+            <div class="card-subtitle">${money(item.price)} each</div>
+          </div>
+          <strong>${money(item.price * item.qty)}</strong>
+        </div>
+      `).join('');
+    }
+
+    function normalizeName(value) {
+      return String(value || '').trim().toLowerCase();
+    }
+
+    function renderReadyAlerts() {
+      const list = $('readyAlertsList');
+      if (!list) return;
+
+      if (!state.readyAlerts.length) {
+        list.innerHTML = '<div class="empty-state">No ready alerts</div>';
+        return;
+      }
+
+      list.innerHTML = state.readyAlerts.map((alert) => `
+        <div class="notice success ready-alert-card">
+          <strong>Table ${escapeHtml(alert.tableNumber)} ready</strong>
+          <div>${escapeHtml(alert.message)}</div>
+          <div class="card-subtitle">${escapeHtml(formatDateTime(alert.readyAt))}</div>
+          <button class="button ghost" type="button" data-dismiss-alert="${escapeHtml(alert.id)}">خبر شوم / Clear</button>
+        </div>
+      `).join('');
+    }
+
+    function getSelectedTableOrders() {
+      if (!state.selectedTable) return [];
+      return (state.snapshot.activeOrders || []).filter((order) => Number(order.tableNumber) === state.selectedTable);
+    }
+
+    function renderTableControl() {
+      const button = $('freeTableButton');
+      const text = $('tableStatusText');
+      if (!button || !text) return;
+
+      if (!state.selectedTable) {
+        button.disabled = true;
+        text.textContent = 'No table selected';
+        return;
+      }
+
+      const tableOrders = getSelectedTableOrders();
+      const readyCount = tableOrders.filter((order) => order.status === 'ready').length;
+      const total = tableOrders.reduce((sum, order) => sum + (Number(order.total) || 0), 0);
+      button.disabled = !state.socket || !state.socket.connected;
+
+      if (!tableOrders.length) {
+        button.disabled = true;
+        text.textContent = `Table ${state.selectedTable} is already free`;
+        return;
+      }
+
+      text.textContent = `Table ${state.selectedTable}: ${readyCount}/${tableOrders.length} ready · ${money(total)}`;
+    }
+
+    function getOrderDraft(order) {
+      if (!state.orderDrafts[order.id]) {
+        state.orderDrafts[order.id] = Object.fromEntries((order.items || []).map((item) => [item.id, Number(item.qty) || 0]));
+      }
+      return state.orderDrafts[order.id];
+    }
+
+    function getDraftItems(order) {
+      const draft = getOrderDraft(order);
+      const orderItemsById = new Map((order.items || []).map((item) => [item.id, item]));
+
+      return Object.entries(draft)
+        .map(([itemId, value]) => {
+          const qty = Math.max(0, Math.round(Number(value) || 0));
+          if (!qty) return null;
+
+          const orderItem = orderItemsById.get(itemId);
+          if (orderItem) {
+            return {
+              ...orderItem,
+              qty,
+              quantity: qty,
+              lineTotal: orderItem.price * qty
+            };
+          }
+
+          const variant = findMenuVariant(itemId);
+          if (!variant) return null;
+          return buildItemFromMenuVariant(variant, qty);
+        })
+        .filter(Boolean);
+    }
+
+    function hasDraftChanges(order) {
+      const draftItemsById = new Map(getDraftItems(order).map((item) => [item.id, item]));
+      const orderItems = order.items || [];
+
+      if (draftItemsById.size !== orderItems.length) return true;
+      return orderItems.some((item) => {
+        const draftItem = draftItemsById.get(item.id);
+        return (Number(item.qty) || 0) !== (Number(draftItem && draftItem.qty) || 0);
+      });
+    }
+
+    function renderTableOrdersEditor() {
+      const editor = $('tableOrdersEditor');
+      if (!editor) return;
+
+      if (!state.selectedTable) {
+        editor.innerHTML = '<div class="empty-state compact">Select a table to edit sent tickets</div>';
+        return;
+      }
+
+      const orders = getSelectedTableOrders();
+      if (!orders.length) {
+        editor.innerHTML = '<div class="empty-state compact">No sent tickets for this table</div>';
+        return;
+      }
+
+      editor.innerHTML = orders.map((order) => {
+        const draftItems = getDraftItems(order);
+        const orderItemIds = new Set((order.items || []).map((item) => item.id));
+        const draftItemsById = new Map(draftItems.map((item) => [item.id, item]));
+        const addedDraftItems = draftItems.filter((item) => !orderItemIds.has(item.id));
+        const selectedItems = getSelectedItems();
+        const selectedQty = selectedItems.reduce((sum, item) => sum + item.qty, 0);
+        const draftTotal = draftItems.reduce((sum, item) => sum + item.lineTotal, 0);
+        const draftQty = draftItems.reduce((sum, item) => sum + item.qty, 0);
+        const changed = hasDraftChanges(order);
+        const saving = state.savingOrderIds.has(order.id);
+        const canSave = state.socket && state.socket.connected && changed && draftQty > 0 && !saving;
+
+        return `
+          <article class="edit-order-card">
+            <div class="card-top">
+              <div>
+                <h4 class="card-title">Table ${escapeHtml(order.tableNumber)} ticket</h4>
+                <p class="card-subtitle">${escapeHtml(order.status === 'ready' ? 'Ready order will return to the active queue if updated' : 'Counter will be notified after update')}</p>
+              </div>
+              <span class="chip ${changed ? 'warning' : 'ready'}">${changed ? 'Changed' : 'Saved'}</span>
+            </div>
+            <div class="edit-item-list">
+              ${(order.items || []).map((item) => {
+                const draft = getOrderDraft(order);
+                const qty = Math.max(0, Math.round(Number(draft[item.id]) || 0));
+                return `
+                  <div class="edit-item-line">
+                    <div>
+                      <strong>${escapeHtml(displayItemName(item.name))}</strong>
+                      <span>${money(item.price)} each</span>
+                    </div>
+                    <div class="mini-stepper" aria-label="${escapeHtml(displayItemName(item.name))} quantity">
+                      <button class="icon-button" type="button" data-edit-delta="-1" data-order-id="${escapeHtml(order.id)}" data-item-id="${escapeHtml(item.id)}" title="Decrease">−</button>
+                      <span class="stepper-value">${qty}</span>
+                      <button class="icon-button" type="button" data-edit-delta="1" data-order-id="${escapeHtml(order.id)}" data-item-id="${escapeHtml(item.id)}" title="Increase">+</button>
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+              ${addedDraftItems.map((item) => `
+                <div class="edit-item-line">
+                  <div>
+                    <strong>${escapeHtml(displayItemName(item.name))}</strong>
+                    <span>${money(item.price)} each · New</span>
+                  </div>
+                  <div class="mini-stepper" aria-label="${escapeHtml(displayItemName(item.name))} quantity">
+                    <button class="icon-button" type="button" data-edit-delta="-1" data-order-id="${escapeHtml(order.id)}" data-item-id="${escapeHtml(item.id)}" title="Decrease">−</button>
+                    <span class="stepper-value">${escapeHtml((draftItemsById.get(item.id) && draftItemsById.get(item.id).qty) || item.qty)}</span>
+                    <button class="icon-button" type="button" data-edit-delta="1" data-order-id="${escapeHtml(order.id)}" data-item-id="${escapeHtml(item.id)}" title="Increase">+</button>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+            ${selectedQty ? `<div class="notice compact">په menu کې ${escapeHtml(selectedQty)} item انتخاب دی؛ دلته یې ور اضافه کولای شئ.</div>` : ''}
+            <div class="summary-total compact-total">
+              <span>Updated total</span>
+              <span>${money(draftTotal)}</span>
+            </div>
+            <div class="edit-actions">
+              <button class="button ghost" type="button" data-add-selection="${escapeHtml(order.id)}" ${selectedQty && !saving ? '' : 'disabled'}>Add selected & update</button>
+              <button class="button ghost" type="button" data-replace-selection="${escapeHtml(order.id)}" ${selectedQty && !saving ? '' : 'disabled'}>Replace with selected & update</button>
+              <button class="button ghost" type="button" data-reset-order="${escapeHtml(order.id)}" ${changed ? '' : 'disabled'}>Reset</button>
+              <button class="button primary" type="button" data-save-order="${escapeHtml(order.id)}" ${canSave ? '' : 'disabled'}>${saving ? 'Updating...' : 'Update Order / تغیر ولیږه'}</button>
+            </div>
+          </article>
+        `;
+      }).join('');
+    }
+
+    function updateOrderDraft(orderId, itemId, delta) {
+      const order = (state.snapshot.activeOrders || []).find((item) => item.id === orderId);
+      if (!order) return;
+      const draft = getOrderDraft(order);
+      draft[itemId] = Math.max(0, (Number(draft[itemId]) || 0) + delta);
+      renderTableOrdersEditor();
+    }
+
+    function addSelectedItemsToOrderDraft(orderId) {
+      const order = (state.snapshot.activeOrders || []).find((item) => item.id === orderId);
+      if (!order) return showToast('Order not found', 'danger');
+
+      const selectedItems = getSelectedItems();
+      if (!selectedItems.length) return showToast('Menu کې item انتخاب کړئ / Select menu items first', 'danger');
+
+      const draft = getOrderDraft(order);
+      selectedItems.forEach((item) => {
+        draft[item.id] = Math.max(0, Math.round(Number(draft[item.id]) || 0)) + item.qty;
+      });
+
+      clearMenuSelection();
+      renderTableOrdersEditor();
+      saveOrderUpdate(orderId);
+    }
+
+    function replaceOrderDraftWithSelected(orderId) {
+      const order = (state.snapshot.activeOrders || []).find((item) => item.id === orderId);
+      if (!order) return showToast('Order not found', 'danger');
+
+      const selectedItems = getSelectedItems();
+      if (!selectedItems.length) return showToast('Menu کې نوی item انتخاب کړئ / Select replacement items first', 'danger');
+
+      state.orderDrafts[order.id] = {};
+      const draft = getOrderDraft(order);
+      selectedItems.forEach((item) => {
+        draft[item.id] = Math.max(0, Math.round(Number(draft[item.id]) || 0)) + item.qty;
+      });
+
+      clearMenuSelection();
+      renderTableOrdersEditor();
+      saveOrderUpdate(orderId);
+    }
+
+    function resetOrderDraft(orderId) {
+      delete state.orderDrafts[orderId];
+      renderTableOrdersEditor();
+    }
+
+    async function updateOrderViaHttp(payload) {
+      const requestBody = {
+        ...payload,
+        order_id: payload.orderId
+      };
+      const urls = [
+        '/update_order',
+        '/edit_order',
+        `/api/orders/${encodeURIComponent(payload.orderId)}/update`
+      ];
+      const errors = [];
+
+      for (const url of urls) {
+        try {
+          const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(requestBody)
+          });
+          const data = await response.json().catch(() => null);
+          if (response.ok && data && data.ok) return data;
+          errors.push((data && data.message) || `${url} failed (${response.status})`);
+        } catch (error) {
+          errors.push(`${url} could not reach server`);
+        }
+      }
+
+      return {
+        ok: false,
+        message: errors.join(' · ') || 'HTTP update could not reach the server'
+      };
+    }
+
+    function updateOrderViaSocket(eventName, payload) {
+      return new Promise((resolve) => {
+        if (!state.socket || !state.socket.connected) {
+          resolve({ ok: false, message: `${eventName}: socket offline` });
+          return;
+        }
+
+        let finished = false;
+        const timer = setTimeout(() => {
+          if (finished) return;
+          finished = true;
+          resolve({ ok: false, message: `${eventName}: no server reply` });
+        }, 7000);
+
+        state.socket.emit(eventName, payload, (response) => {
+          if (finished) return;
+          finished = true;
+          clearTimeout(timer);
+          resolve(response || { ok: false, message: `${eventName}: empty server reply` });
+        });
+      });
+    }
+
+    async function sendOrderUpdate(payload) {
+      const attempts = [];
+      const httpResponse = await updateOrderViaHttp(payload);
+      if (httpResponse.ok) return httpResponse;
+      attempts.push(httpResponse.message);
+
+      const updateOrderResponse = await updateOrderViaSocket('update_order', payload);
+      if (updateOrderResponse.ok) return updateOrderResponse;
+      attempts.push(updateOrderResponse.message);
+
+      const editOrderResponse = await updateOrderViaSocket('edit_order', payload);
+      if (editOrderResponse.ok) return editOrderResponse;
+      attempts.push(editOrderResponse.message);
+
+      return {
+        ok: false,
+        message: `Update failed: ${attempts.filter(Boolean).join(' · ')}`
+      };
+    }
+
+    function applyUpdatedOrderLocally(order) {
+      if (!order || !order.id) return;
+      const orders = state.snapshot.activeOrders || [];
+      state.snapshot = {
+        ...state.snapshot,
+        activeOrders: orders.map((item) => (item.id === order.id ? { ...item, ...order } : item))
+      };
+    }
+
+    async function saveOrderUpdate(orderId) {
+      const order = (state.snapshot.activeOrders || []).find((item) => item.id === orderId);
+      if (!order) return showToast('Order not found', 'danger');
+
+      const items = getDraftItems(order);
+      if (!items.length) return showToast('At least one item must stay on the order', 'danger');
+
+      state.savingOrderIds.add(orderId);
+      renderTableOrdersEditor();
+
+      const payload = {
+        orderId,
+        order_id: orderId,
+        waiterName: $('waiterName').value.trim() || order.waiterName,
+        items
+      };
+
+      try {
+        const response = await sendOrderUpdate(payload);
+        state.savingOrderIds.delete(orderId);
+
+        if (!response || !response.ok) {
+          renderTableOrdersEditor();
+          return showToast((response && response.message) || 'Could not update order', 'danger');
+        }
+
+        applyUpdatedOrderLocally(response.order);
+        delete state.orderDrafts[orderId];
+        renderTables();
+        renderSummary();
+        renderTableControl();
+        renderTableOrdersEditor();
+        showToast('Order updated. Counter notified.', 'success');
+        if (state.socket && state.socket.connected) state.socket.emit('request_snapshot');
+      } catch (error) {
+        state.savingOrderIds.delete(orderId);
+        renderTableOrdersEditor();
+        showToast('Update failed. Restart server and refresh all pages.', 'danger');
+      }
+    }
+
+    function changeQty(id, delta) {
+      state.quantities[id] = Math.max(0, (state.quantities[id] || 0) + delta);
+      updateMenuQuantities(id);
+      renderSummary();
+    }
+
+    function resetTicketDraft() {
+      state.orderDrafts = {};
+      state.expandedMenuGroup = null;
+      clearMenuSelection();
+      $('orderNote').value = '';
+    }
+
+    function focusSentOrderEditor() {
+      const section = $('sentOrderEditorSection');
+      if (!section) return;
+      section.classList.add('is-highlight');
+      section.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      clearTimeout(window.__editorHighlightTimeout);
+      window.__editorHighlightTimeout = setTimeout(() => section.classList.remove('is-highlight'), 2400);
+    }
+
+    function clearOrder() {
+      state.selectedTable = null;
+      resetTicketDraft();
+      renderTables();
+      renderTableControl();
+    }
+
+    function submitOrder() {
+      const waiterName = $('waiterName').value.trim();
+      const items = getSelectedItems();
+
+      if (!waiterName) return showToast('د ویټر نوم ولیکئ / Enter waiter name', 'danger');
+      if (!state.selectedTable) return showToast('میز انتخاب کړئ / Select a table', 'danger');
+      if (!items.length) return showToast('غذا انتخاب کړئ / Select menu items', 'danger');
+
+      $('sendOrderButton').disabled = true;
+      state.socket.emit('new_order', {
+        tableNumber: state.selectedTable,
+        waiterName,
+        note: $('orderNote').value.trim(),
+        items
+      }, (response) => {
+        $('sendOrderButton').disabled = false;
+        if (!response || !response.ok) {
+          return showToast((response && response.message) || 'Order failed', 'danger');
+        }
+        const tableNumber = state.selectedTable;
+        resetTicketDraft();
+        renderTables();
+        renderTableControl();
+        renderTableOrdersEditor();
+        showToast(`Table ${tableNumber} ارډر ولیږل شو · Edit Sent Order کې یې سم کړئ`, 'success');
+        focusSentOrderEditor();
+      });
+    }
+
+    function freeSelectedTable() {
+      if (!state.selectedTable) return showToast('میز انتخاب کړئ / Select a table', 'danger');
+
+      const tableNumber = state.selectedTable;
+      const waiterName = $('waiterName').value.trim() || 'Waiter';
+      const tableOrders = getSelectedTableOrders();
+
+      if (!tableOrders.length) {
+        showToast(`Table ${tableNumber} is already free`, 'success');
+        return;
+      }
+
+      const total = tableOrders.reduce((sum, order) => sum + (Number(order.total) || 0), 0);
+      const ok = confirm(`Table ${tableNumber} has ${tableOrders.length} open ticket(s), total ${money(total)}. Mark it free and remove these open tickets?`);
+      if (!ok) return;
+
+      $('freeTableButton').disabled = true;
+      state.socket.emit('free_table', {
+        tableNumber,
+        waiterName,
+        reason: 'Customer left'
+      }, (response) => {
+        $('freeTableButton').disabled = false;
+        if (!response || !response.ok) {
+          return showToast((response && response.message) || 'Could not free table', 'danger');
+        }
+        state.selectedTable = null;
+        renderTables();
+        renderTableControl();
+        showToast(`Table ${tableNumber} is now free`, 'success');
+      });
+    }
+
+    function handleReadyNotification(data) {
+      const myName = normalizeName($('waiterName').value);
+      const waiterName = String(data.waiterName || '').trim();
+      if (!myName || normalizeName(waiterName) !== myName) return;
+
+      const message = `${waiterName}: ستا د Table ${data.tableNumber} ارډر تیار شو`;
+      state.readyAlerts = [
+        {
+          id: data.orderId || `${data.tableNumber}-${Date.now()}`,
+          orderId: data.orderId,
+          tableNumber: data.tableNumber,
+          message,
+          readyAt: data.readyAt || new Date().toISOString()
+        },
+        ...state.readyAlerts.filter((alert) => alert.orderId !== data.orderId)
+      ].slice(0, 10);
+      renderReadyAlerts();
+
+      const banner = $('readyBanner');
+      banner.textContent = message;
+      banner.classList.remove('hidden');
+      showToast(message, 'success');
+      playReadyAlert();
+
+      try {
+        if ('speechSynthesis' in window) {
+          window.speechSynthesis.cancel();
+          const voice = new SpeechSynthesisUtterance(`${waiterName}, your table ${data.tableNumber} order is ready.`);
+          voice.rate = 0.95;
+          window.speechSynthesis.speak(voice);
+        }
+      } catch (error) {
+        console.warn('Speech notification failed', error);
+      }
+
+      clearTimeout(window.__readyBannerTimeout);
+      window.__readyBannerTimeout = setTimeout(() => banner.classList.add('hidden'), 7000);
+    }
+
+    function dismissReadyAlert(alertId) {
+      state.readyAlerts = state.readyAlerts.filter((alert) => alert.id !== alertId);
+      renderReadyAlerts();
+      if (!state.readyAlerts.length) {
+        $('readyBanner').classList.add('hidden');
+      }
+      showToast('خبرتیا پاکه شوه', 'success');
+    }
+
+    function enableAlerts(showMessage = true) {
+      try {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (AudioContextClass && !state.audioContext) {
+          state.audioContext = new AudioContextClass();
+        }
+        if (state.audioContext && state.audioContext.state === 'suspended') {
+          state.audioContext.resume();
+        }
+        state.alertsEnabled = true;
+        $('readyAlertStatus').textContent = 'Sound, banner, and vibration alerts are ready';
+        if (showMessage) showToast('Ready alerts enabled', 'success');
+      } catch (error) {
+        state.alertsEnabled = false;
+        $('readyAlertStatus').textContent = 'Banner alerts are ready';
+      }
+    }
+
+    function playReadyAlert() {
+      try {
+        if ('vibrate' in navigator) {
+          navigator.vibrate([250, 120, 250, 120, 350]);
+        }
+      } catch (error) {
+        console.warn('Vibration failed', error);
+      }
+
+      try {
+        if (!state.alertsEnabled) enableAlerts(false);
+        if (!state.audioContext) return;
+        const now = state.audioContext.currentTime;
+        [0, 0.28, 0.56].forEach((offset) => {
+          const oscillator = state.audioContext.createOscillator();
+          const gain = state.audioContext.createGain();
+          oscillator.type = 'sine';
+          oscillator.frequency.setValueAtTime(880, now + offset);
+          gain.gain.setValueAtTime(0.0001, now + offset);
+          gain.gain.exponentialRampToValueAtTime(0.18, now + offset + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + offset + 0.18);
+          oscillator.connect(gain).connect(state.audioContext.destination);
+          oscillator.start(now + offset);
+          oscillator.stop(now + offset + 0.2);
+        });
+      } catch (error) {
+        console.warn('Ready alert sound failed', error);
+      }
+    }
+
+    function handleTableFreed(data) {
+      if (!data || !data.tableNumber) return;
+      if (state.selectedTable === Number(data.tableNumber)) {
+        state.selectedTable = null;
+      }
+      state.orderDrafts = {};
+      renderTables();
+      renderTableControl();
+    }
+
+    function showToast(message, type) {
+      const toast = $('toast');
+      toast.textContent = message;
+      toast.className = `notice ${type === 'danger' ? 'danger' : 'success'}`;
+      toast.classList.remove('hidden');
+      clearTimeout(window.__toastTimeout);
+      window.__toastTimeout = setTimeout(() => toast.classList.add('hidden'), 4200);
+    }
+
+    function formatDateTime(value) {
+      if (!value) return '';
+      return new Date(value).toLocaleString([], {
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+
+    $('loginButton').addEventListener('click', checkPassword);
+    $('waiterPassword').addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') checkPassword();
+    });
+    $('tableGrid').addEventListener('click', (event) => {
+      const button = event.target.closest('[data-table]');
+      if (!button) return;
+      state.selectedTable = Number(button.dataset.table);
+      renderTables();
+    });
+    $('menuList').addEventListener('click', (event) => {
+      const qtyButton = event.target.closest('[data-action="qty"]');
+      if (qtyButton) {
+        event.preventDefault();
+        changeQty(qtyButton.dataset.id, Number(qtyButton.dataset.delta));
+        return;
+      }
+
+      const priceOptionsButton = event.target.closest('[data-action="price-options"]');
+      if (priceOptionsButton) {
+        event.preventDefault();
+        togglePriceOptions(priceOptionsButton.dataset.id);
+        return;
+      }
+
+      const toggle = event.target.closest('[data-group-toggle]');
+      if (toggle) {
+        event.preventDefault();
+        toggleMenuGroup(toggle.dataset.groupToggle);
+      }
+    });
+    $('menuFilters').addEventListener('click', (event) => {
+      const button = event.target.closest('[data-filter]');
+      if (!button) return;
+      setMenuFilter(button.dataset.filter);
+    });
+    $('clearOrderButton').addEventListener('click', clearOrder);
+    $('sendOrderButton').addEventListener('click', submitOrder);
+    $('freeTableButton').addEventListener('click', freeSelectedTable);
+    $('enableAlertsButton').addEventListener('click', () => enableAlerts(true));
+    $('readyAlertsList').addEventListener('click', (event) => {
+      const button = event.target.closest('[data-dismiss-alert]');
+      if (!button) return;
+      dismissReadyAlert(button.dataset.dismissAlert);
+    });
+    $('tableOrdersEditor').addEventListener('click', (event) => {
+      const editButton = event.target.closest('[data-edit-delta]');
+      if (editButton) {
+        updateOrderDraft(editButton.dataset.orderId, editButton.dataset.itemId, Number(editButton.dataset.editDelta));
+        return;
+      }
+
+      const resetButton = event.target.closest('[data-reset-order]');
+      if (resetButton) {
+        resetOrderDraft(resetButton.dataset.resetOrder);
+        return;
+      }
+
+      const addSelectionButton = event.target.closest('[data-add-selection]');
+      if (addSelectionButton) {
+        addSelectedItemsToOrderDraft(addSelectionButton.dataset.addSelection);
+        return;
+      }
+
+      const replaceSelectionButton = event.target.closest('[data-replace-selection]');
+      if (replaceSelectionButton) {
+        replaceOrderDraftWithSelected(replaceSelectionButton.dataset.replaceSelection);
+        return;
+      }
+
+      const saveButton = event.target.closest('[data-save-order]');
+      if (saveButton) {
+        saveOrderUpdate(saveButton.dataset.saveOrder);
+      }
+    });
+    $('logoutButton').addEventListener('click', window.KandaharAuth.logout);
+    checkExistingLogin();
+  </script>
+</body>
+</html>

@@ -1,0 +1,33 @@
+{
+  "startedAt": "2026-08-22T10:47:37.227Z",
+  "salesTotal": 330,
+  "saleCount": 1,
+  "unitsTotal": 3,
+  "items": {
+    "biryani-special": {
+      "name": "سپیشل بریاني",
+      "quantity": 1,
+      "revenue": 160
+    },
+    "kebab-chicken-tikka": {
+      "name": "چکن تکه کباب",
+      "quantity": 1,
+      "revenue": 150
+    },
+    "small-bottle-wow": {
+      "name": "واو",
+      "quantity": 1,
+      "revenue": 20
+    }
+  },
+  "expensesTotal": 200,
+  "expenses": [
+    {
+      "id": "EXP-mt49z91o-fcsp6",
+      "name": "مستی",
+      "note": "قذیر",
+      "amount": 200,
+      "createdAt": "2026-08-22T11:08:43.788Z"
+    }
+  ]
+}

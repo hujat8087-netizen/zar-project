@@ -1,0 +1,50 @@
+[
+  {
+    "id": "custom-msz1713b-54pvj",
+    "groupId": "large-bottles",
+    "name": "غټ ډیو",
+    "englishName": "غټ ډیو",
+    "price": 70,
+    "createdAt": "2026-08-18T19:03:59.303Z"
+  },
+  {
+    "id": "custom-msz18bs0-8dps1",
+    "groupId": "large-bottles",
+    "name": "غټ میجیک",
+    "englishName": "غټ میجیک",
+    "price": 60,
+    "createdAt": "2026-08-18T19:04:59.808Z"
+  },
+  {
+    "id": "custom-mt8iyyoz-q14fa",
+    "groupId": "small-bottles",
+    "name": "ډیو",
+    "englishName": "ډیو",
+    "price": 30,
+    "createdAt": "2026-08-25T10:31:31.619Z"
+  },
+  {
+    "id": "custom-mt8wbhr8-1fs4j",
+    "groupId": "large-bottles",
+    "name": "غټ ډیو",
+    "englishName": "غټ ډیو",
+    "price": 70,
+    "createdAt": "2026-08-25T16:45:11.204Z"
+  },
+  {
+    "id": "custom-mtbmo7yv-6ugv5",
+    "groupId": "small-bottles",
+    "name": "الکوزی",
+    "englishName": "الکوزی",
+    "price": 40,
+    "createdAt": "2026-08-27T14:38:27.415Z"
+  },
+  {
+    "id": "custom-mtenarid-fo8oo",
+    "groupId": "large-bottles",
+    "name": "غټ پیپسی",
+    "englishName": "غټ پیپسی",
+    "price": 60,
+    "createdAt": "2026-08-29T17:19:17.702Z"
+  }
+]

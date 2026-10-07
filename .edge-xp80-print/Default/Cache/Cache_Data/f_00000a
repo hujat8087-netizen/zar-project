@@ -1,0 +1,651 @@
+(function () {
+  const menuGroups = [
+      {
+        id: 'biryani',
+        name: 'Chicken Biryani',
+        localName: 'بریانی',
+        image: 'beryani.png',
+        filter: 'food',
+        theme: 'biryani',
+        sections: [
+          {
+            id: 'biryani-types',
+            title: 'Biryani',
+            titleLocal: 'بریانی',
+            variants: [
+              { id: 'zaffran-biryani-chicken', label: 'چکن بریاني', labelEn: 'Chicken Biryani', price: 110 },
+              { id: 'zaffran-biryani-simple', label: 'ساده بریاني', labelEn: 'Simple Biryani', price: 70 },
+              { id: 'zaffran-biryani-special', label: 'سپیشل بریاني', labelEn: 'Special Biryani', price: 160 }
+            ]
+          }
+        ]
+      },
+      {
+        id: 'kebab',
+        name: 'Kebab',
+        localName: 'کباب',
+        image: 'kabab.jpg',
+        filter: 'food',
+        theme: 'kebab',
+        sections: [
+          {
+            id: 'kebab-types',
+            title: 'Kebabs',
+            titleLocal: 'کبابونه',
+            variants: [
+              { id: 'kebab-afghani', label: 'افغاني کباب', labelEn: 'Afghani Kebab', price: 120 },
+              { id: 'kebab-chicken-tikka', label: 'چکن تکه کباب', labelEn: 'Chicken Tikka Kebab', price: 150 },
+              { id: 'kebab-reshmi', label: 'ریشمي کباب', labelEn: 'Reshmi Kebab', price: 150 },
+              { id: 'kebab-chicken-boti', label: 'چکن بوټي کباب', labelEn: 'Chicken Boti Kebab', price: 170 },
+              { id: 'kebab-chopan', label: 'چوپان کباب', labelEn: 'Chopan Kebab', price: 320 },
+              { id: 'kebab-mutton-boti', label: 'مټن بوټي', labelEn: 'Mutton Boti', price: 250 },
+              { id: 'kebab-malai-boti', label: 'ملائي بوټي کباب', labelEn: 'Malai Boti Kebab', price: 170 },
+              { id: 'kebab-chargha', label: 'چرګ', labelEn: 'Chargha', price: 450 },
+              { id: 'kebab-chicken-wings', label: 'چکن وینګز', labelEn: 'Chicken Wings', price: 120 },
+              { id: 'kebab-bbq-wings', label: 'باربيکيو وینګز', labelEn: 'BBQ Wings', price: 120 },
+              { id: 'kebab-spicy-wings', label: 'سپایسی وینګز', labelEn: 'Spicy Wings', price: 180 },
+              { id: 'kebab-ging-tikka', label: 'ګینګ ټیکه', labelEn: 'Ging Tikka', price: 120 }
+            ]
+          }
+        ]
+      },
+      {
+        id: 'pizza',
+        name: 'Pizza',
+        localName: 'پیزا',
+        image: 'pizza.jpg',
+        filter: 'food',
+        sections: [
+          {
+            id: 'pizza-sp-chicken',
+            title: 'SP Chicken Pizza',
+            titleLocal: 'سپیشل چکن پیزا',
+            variants: [
+              { id: 'pizza-sp-chicken-s', label: 'سپیشل چکن پیزا', labelEn: 'SP Chicken Pizza', size: 'S', price: 200 },
+              { id: 'pizza-sp-chicken-m', label: 'سپیشل چکن پیزا', labelEn: 'SP Chicken Pizza', size: 'M', price: 350 },
+              { id: 'pizza-sp-chicken-l', label: 'سپیشل چکن پیزا', labelEn: 'SP Chicken Pizza', size: 'L', price: 500 },
+              { id: 'pizza-sp-chicken-xl', label: 'سپیشل چکن پیزا', labelEn: 'SP Chicken Pizza', size: 'XL', price: 650 }
+            ]
+          },
+          {
+            id: 'pizza-italian-chicken',
+            title: 'Italian Chicken Pizza',
+            titleLocal: 'ایټالین چکن پیزا',
+            variants: [
+              { id: 'pizza-italian-chicken-s', label: 'ایټالین چکن پیزا', labelEn: 'Italian Chicken Pizza', size: 'S', price: 170 },
+              { id: 'pizza-italian-chicken-m', label: 'ایټالین چکن پیزا', labelEn: 'Italian Chicken Pizza', size: 'M', price: 300 },
+              { id: 'pizza-italian-chicken-l', label: 'ایټالین چکن پیزا', labelEn: 'Italian Chicken Pizza', size: 'L', price: 450 },
+              { id: 'pizza-italian-chicken-xl', label: 'ایټالین چکن پیزا', labelEn: 'Italian Chicken Pizza', size: 'XL', price: 600 }
+            ]
+          },
+          {
+            id: 'pizza-crown',
+            title: 'Crown Pizza',
+            titleLocal: 'کراون پیزا',
+            variants: [
+              { id: 'pizza-crown-s', label: 'کراون پیزا', labelEn: 'Crown Pizza', size: 'S', price: 170 },
+              { id: 'pizza-crown-m', label: 'کراون پیزا', labelEn: 'Crown Pizza', size: 'M', price: 300 },
+              { id: 'pizza-crown-l', label: 'کراون پیزا', labelEn: 'Crown Pizza', size: 'L', price: 450 },
+              { id: 'pizza-crown-xl', label: 'کراون پیزا', labelEn: 'Crown Pizza', size: 'XL', price: 600 }
+            ]
+          },
+          {
+            id: 'pizza-beef',
+            title: 'Beef Pizza',
+            titleLocal: 'بیف پیزا',
+            variants: [
+              { id: 'pizza-beef-s', label: 'بیف پیزا', labelEn: 'Beef Pizza', size: 'S', price: 170 },
+              { id: 'pizza-beef-m', label: 'بیف پیزا', labelEn: 'Beef Pizza', size: 'M', price: 300 },
+              { id: 'pizza-beef-l', label: 'بیف پیزا', labelEn: 'Beef Pizza', size: 'L', price: 450 },
+              { id: 'pizza-beef-xl', label: 'بیف پیزا', labelEn: 'Beef Pizza', size: 'XL', price: 600 }
+            ]
+          },
+          {
+            id: 'pizza-four-season',
+            title: 'Four Season Pizza',
+            titleLocal: 'فورسیزن پیزا',
+            variants: [
+              { id: 'pizza-four-season-s', label: 'فورسیزن پیزا', labelEn: 'Four Season Pizza', size: 'S', price: 200 },
+              { id: 'pizza-four-season-m', label: 'فورسیزن پیزا', labelEn: 'Four Season Pizza', size: 'M', price: 350 },
+              { id: 'pizza-four-season-l', label: 'فورسیزن پیزا', labelEn: 'Four Season Pizza', size: 'L', price: 500 },
+              { id: 'pizza-four-season-xl', label: 'فورسیزن پیزا', labelEn: 'Four Season Pizza', size: 'XL', price: 650 }
+            ]
+          },
+          {
+            id: 'pizza-fish',
+            title: 'Fish Pizza',
+            titleLocal: 'ماهي پیزا',
+            variants: [
+              { id: 'pizza-fish-s', label: 'ماهي پیزا', labelEn: 'Fish Pizza', size: 'S', price: 170 },
+              { id: 'pizza-fish-m', label: 'ماهي پیزا', labelEn: 'Fish Pizza', size: 'M', price: 300 },
+              { id: 'pizza-fish-l', label: 'ماهي پیزا', labelEn: 'Fish Pizza', size: 'L', price: 450 },
+              { id: 'pizza-fish-xl', label: 'ماهي پیزا', labelEn: 'Fish Pizza', size: 'XL', price: 600 }
+            ]
+          },
+          {
+            id: 'pizza-vegetable',
+            title: 'Vegetable Pizza',
+            titleLocal: 'ترکاري پیزا',
+            variants: [
+              { id: 'pizza-vegetable-s', label: 'ترکاري پیزا', labelEn: 'Vegetable Pizza', size: 'S', price: 150 },
+              { id: 'pizza-vegetable-m', label: 'ترکاري پیزا', labelEn: 'Vegetable Pizza', size: 'M', price: 250 },
+              { id: 'pizza-vegetable-l', label: 'ترکاري پیزا', labelEn: 'Vegetable Pizza', size: 'L', price: 400 },
+              { id: 'pizza-vegetable-xl', label: 'ترکاري پیزا', labelEn: 'Vegetable Pizza', size: 'XL', price: 500 }
+            ]
+          },
+          {
+            id: 'pizza-cheese',
+            title: 'Cheese Pizza',
+            titleLocal: 'خالص چیز پیزا',
+            variants: [
+              { id: 'pizza-cheese-s', label: 'خالص چیز پیزا', labelEn: 'Cheese Pizza', size: 'S', price: 120 },
+              { id: 'pizza-cheese-m', label: 'خالص چیز پیزا', labelEn: 'Cheese Pizza', size: 'M', price: 200 },
+              { id: 'pizza-cheese-l', label: 'خالص چیز پیزا', labelEn: 'Cheese Pizza', size: 'L', price: 350 },
+              { id: 'pizza-cheese-xl', label: 'خالص چیز پیزا', labelEn: 'Cheese Pizza', size: 'XL', price: 450 }
+            ]
+          }
+        ]
+      },
+      {
+        id: 'fast-food',
+        name: 'Fast Food',
+        localName: 'فاسټ فوډ',
+        image: 'burgur.jpg',
+        filter: 'food',
+        theme: 'burger',
+        sections: [
+          {
+            id: 'fast-food-types',
+            title: 'Fast Food',
+            titleLocal: 'فاسټ فوډ',
+            variants: [
+              { id: 'zaffran-broast', label: 'بروسټ', labelEn: 'Broast', price: 150 },
+              { id: 'zaffran-afghani-broast', label: 'افغاني بروسټ', labelEn: 'Afghani Broast', price: 250 },
+              { id: 'zaffran-zinger-chips', label: 'زینګر چپس', labelEn: 'Zinger Chips', price: 120 },
+              { id: 'zaffran-winger', label: 'وینګر', labelEn: 'Winger', price: 150 },
+              { id: 'zaffran-zinger-burger', label: 'زینګر برګر', labelEn: 'Zinger Burger', price: 170 },
+              { id: 'zaffran-zinger-cheese', label: 'زینګر چیز', labelEn: 'Zinger Cheese', price: 200 },
+              { id: 'zaffran-special-zinger', label: 'سپیشل زینګر', labelEn: 'Special Zinger', price: 200 },
+              { id: 'zaffran-special-double-zinger', label: 'سپیشل ډبل زینګر', labelEn: 'Special Double Zinger', price: 240 },
+              { id: 'zaffran-chicken-burger', label: 'چکن برګر', labelEn: 'Chicken Burger', price: 80 },
+              { id: 'zaffran-chicken-cheese-burger', label: 'چکن چیز برګر', labelEn: 'Chicken Cheese Burger', price: 110 },
+              { id: 'zaffran-special-chicken-burger', label: 'سپیشل چکن برګر', labelEn: 'Special Chicken Burger', price: 110 },
+              { id: 'zaffran-special-chicken-cheese-burger', label: 'سپیشل چکن چیز برګر', labelEn: 'Special Chicken Cheese Burger', price: 130 }
+            ]
+          }
+        ]
+      },
+      {
+        id: 'mix-platter',
+        name: 'Mix Platter',
+        localName: 'میکس پلیټر',
+        image: 'pletter.png',
+        filter: 'food',
+        theme: 'platter',
+        sections: [
+          {
+            id: 'mix-platter-sizes',
+            title: 'Mix Platter',
+            titleLocal: 'میکس پلیټر',
+            variants: [
+              { id: 'mix-platter-2', label: '۲ نفري میکس پلیټر', labelEn: 'Mix Platter · 2 Person', price: 500 },
+              { id: 'mix-platter-3', label: '۳ نفري میکس پلیټر', labelEn: 'Mix Platter · 3 Person', price: 800 },
+              { id: 'mix-platter-4', label: '۴ نفري میکس پلیټر', labelEn: 'Mix Platter · 4 Person', price: 950 },
+              { id: 'mix-platter-5', label: '۵ نفري میکس پلیټر', labelEn: 'Mix Platter · 5 Person', price: 1200 },
+              { id: 'mix-platter-6', label: '۶ نفري میکس پلیټر', labelEn: 'Mix Platter · 6 Person', price: 1500 },
+              { id: 'mix-platter-8', label: '۸ نفري میکس پلیټر', labelEn: 'Mix Platter · 8 Person', price: 1800 },
+              { id: 'mix-platter-11', label: '۱۱ نفري میکس پلیټر', labelEn: 'Mix Platter · 11 Person', price: 2500 }
+            ]
+          }
+        ]
+      },
+      {
+        id: 'deals',
+        name: 'Deals',
+        localName: 'ډیلونه',
+        image: 'pletter.png',
+        filter: 'deals',
+        theme: 'platter',
+        sections: [
+          {
+            id: 'deal-types',
+            title: 'Deals',
+            titleLocal: 'ډیلونه',
+            variants: [
+              { id: 'deal-mix-roll', label: 'مکس رول ډیل', labelEn: 'Mix Roll Deal', price: 900 },
+              { id: 'deal-special-platter', label: 'سپیشل پلیټر', labelEn: 'Special Platter Deal', price: 3500 },
+              { id: 'deal-1', label: '۱ نمبر ډیل', labelEn: 'Deal No. 1', price: 1670 },
+              { id: 'deal-2', label: '۲ نمبر ډیل', labelEn: 'Deal No. 2', price: 1350 },
+              { id: 'deal-3', label: '۳ نمبر ډیل', labelEn: 'Deal No. 3', price: 710 },
+              { id: 'deal-4', label: '۴ نمبر ډیل', labelEn: 'Deal No. 4', price: 780 },
+              { id: 'deal-5', label: '۵ نمبر ډیل', labelEn: 'Deal No. 5', price: 560 },
+              { id: 'deal-6', label: '۶ نمبر ډیل', labelEn: 'Deal No. 6', price: 500 }
+            ]
+          }
+        ]
+      },
+      {
+        id: 'roll',
+        name: 'Roll',
+        localName: 'رول',
+        image: 'rolle.png',
+        filter: 'food',
+        theme: 'roll',
+        sections: [
+          {
+            id: 'roll-types',
+            title: 'Roll',
+            titleLocal: 'رول',
+            variants: [
+              { id: 'zaffran-roll-chicken', label: 'چکن رول', labelEn: 'Chicken Roll', price: 80 },
+              { id: 'zaffran-roll-special', label: 'سپیشل رول', labelEn: 'Special Roll', price: 100 },
+              { id: 'zaffran-roll-chicken-shawarma', label: 'چکن شاورما رول', labelEn: 'Chicken Shawarma Roll', price: 90 },
+              { id: 'zaffran-roll-beef', label: 'بیف رول', labelEn: 'Beef Roll', price: 110 },
+              { id: 'zaffran-roll-mix', label: 'مکس رول', labelEn: 'Mix Roll', price: 150 },
+              { id: 'zaffran-roll-burger-bun', label: 'برګر بن رول', labelEn: 'Burger Bun Roll', price: 180 }
+            ]
+          }
+        ]
+      },
+      {
+        id: 'salad',
+        name: 'Salad',
+        localName: 'سلات',
+        image: 'pletter.png',
+        filter: 'food',
+        theme: 'drinks',
+        sections: [
+          {
+            id: 'salad-types',
+            title: 'Salad',
+            titleLocal: 'سلات',
+            variants: [
+              { id: 'salad-regular', label: 'سلات', labelEn: 'Salad', price: 30 },
+              { id: 'salad-cucumber', label: 'ککمبر سلات', labelEn: 'Cucumber Salad', price: 70 },
+              { id: 'salad-special-mix', label: 'سپیشل میکس سلات', labelEn: 'Special Mix Salad', price: 100 },
+              { id: 'salad-fruit', label: 'فروټ سلات', labelEn: 'Fruit Salad', price: 150 },
+              { id: 'salad-green', label: 'ګرین سلات', labelEn: 'Green Salad', price: 30 },
+              { id: 'salad-cream', label: 'کریم سلات', labelEn: 'Cream Salad', price: 150 }
+            ]
+          }
+        ]
+      },
+      {
+        id: 'bread',
+        name: 'Bread',
+        localName: 'ډوډۍ',
+        image: 'pood.jpg',
+        filter: 'food',
+        sections: [
+          {
+            id: 'bread-types',
+            title: 'Bread',
+            titleLocal: 'ډوډۍ',
+            variants: [
+              { id: 'bread-pood', label: 'Pood', labelEn: 'Pood', price: 10 }
+            ]
+          }
+        ]
+      },
+      {
+        id: 'roosh',
+        name: 'Roosh',
+        localName: 'روش',
+        image: 'roush.png',
+        filter: 'food',
+        sections: [
+          {
+            id: 'roosh-types',
+            title: 'Roosh',
+            titleLocal: 'روش',
+            variants: [
+              { id: 'roosh-regular', label: 'روش', labelEn: 'Roosh', price: 250 }
+            ]
+          }
+        ]
+      },
+      {
+        id: 'karaye',
+        name: 'Karahi',
+        localName: 'کړایي',
+        image: 'karaye.jpg',
+        filter: 'food',
+        theme: 'karaye',
+        sections: [
+          {
+            id: 'karaye-types',
+            title: 'Karahi',
+            titleLocal: 'کړایي',
+            variants: [
+              { id: 'karahi-chicken-handi-half', label: 'چکن هنډي', labelEn: 'Chicken Handi', size: 'نیم کیلو', price: 200 },
+              { id: 'karahi-chicken-handi-one', label: 'چکن هنډي', labelEn: 'Chicken Handi', size: '۱ کیلو', price: 800 },
+              { id: 'karahi-chicken-half', label: 'چکن کړایي', labelEn: 'Chicken Karahi', size: 'نیم کیلو', price: 150 },
+              { id: 'karahi-chicken-one', label: 'چکن کړایي', labelEn: 'Chicken Karahi', size: '۱ کیلو', price: 500 },
+              { id: 'karahi-chicken-white-half', label: 'چکن وایټ کړایي', labelEn: 'Chicken White Karahi', size: 'نیم کیلو', price: 180 },
+              { id: 'karahi-chicken-white-one', label: 'چکن وایټ کړایي', labelEn: 'Chicken White Karahi', size: '۱ کیلو', price: 600 },
+              { id: 'karahi-mutton-half', label: 'مټن کړایي', labelEn: 'Mutton Karahi', size: 'نیم کیلو', price: 200 },
+              { id: 'karahi-mutton-one', label: 'مټن کړایي', labelEn: 'Mutton Karahi', size: '۱ کیلو', price: 700 },
+              { id: 'karahi-mutton-white-half', label: 'مټن وایټ کړایي', labelEn: 'Mutton White Karahi', size: 'نیم کیلو', price: 220 },
+              { id: 'karahi-mutton-white-one', label: 'مټن وایټ کړایي', labelEn: 'Mutton White Karahi', size: '۱ کیلو', price: 850 },
+              { id: 'karahi-fish-half', label: 'ماهي کړایي', labelEn: 'Fish Karahi', size: 'نیم کیلو', price: 160 },
+              { id: 'karahi-fish-one', label: 'ماهي کړایي', labelEn: 'Fish Karahi', size: '۱ کیلو', price: 500 },
+              { id: 'karahi-chowmein', label: 'چومین', labelEn: 'Chowmein', price: 160 },
+              { id: 'karahi-chicken-fried-rice', label: 'چکن فرایډ رایس', labelEn: 'Chicken Fried Rice', price: 140 },
+              { id: 'karahi-vegetable-fried-rice', label: 'ترکاري فرایډ رایس', labelEn: 'Vegetable Fried Rice', price: 120 },
+              { id: 'karahi-tandoori-sheep-pukht', label: 'تندوري پسه پخت', labelEn: 'Tandoori Sheep Pukht', price: 1700 },
+              { id: 'karahi-tandoori-sheep-pukht-rice', label: 'تندوري پسه پخت رایس', labelEn: 'Tandoori Sheep Pukht Rice', price: 2200 }
+            ]
+          }
+        ]
+      },
+      {
+        id: 'large-bottles',
+        name: 'Large Bottles',
+        localName: 'غټ بوتلونه',
+        image: 'large.jpg',
+        filter: 'drinks',
+        theme: 'drinks',
+        sections: [
+          {
+            id: 'large-bottle-types',
+            title: 'Large Bottles',
+            titleLocal: 'غټ بوتلونه',
+            variants: [
+              { id: 'large-bottle-cola', label: 'غټ کولا', labelEn: 'Large Cola', price: 60 },
+              { id: 'large-bottle-breeze', label: 'غټ بریز', labelEn: 'Large Breeze', price: 60 },
+              { id: 'large-bottle-hit-magic', label: 'اټ مجیک', labelEn: 'Hit Magic', price: 60 },
+              { id: 'large-bottle-wow', label: 'غټ واو', labelEn: 'Large Wow', price: 60 },
+              { id: 'large-bottle-element', label: 'غټ ایلمنټ', labelEn: 'Large Element', price: 60 },
+              { id: 'large-bottle-coke', label: 'غټ کوک', labelEn: 'Large Coke', price: 60 },
+              { id: 'large-bottle-dew', label: 'اټ ډیو', labelEn: 'Hit Dew', price: 70 },
+              { id: 'large-bottle-sprite', label: 'غټ سپرایت', labelEn: 'Large Sprite', price: 60 },
+              { id: 'large-bottle-mirinda', label: 'غټ مرندا', labelEn: 'Large Mirinda', price: 60 },
+              { id: 'large-bottle-7up', label: 'غټ 7up', labelEn: 'Large 7up', price: 60 },
+              { id: 'large-bottle-water', label: 'غټی اوبه', labelEn: 'Large Water', price: 20 }
+            ]
+          }
+        ]
+      },
+      {
+        id: 'small-bottles',
+        name: 'Small Bottles',
+        localName: 'کوچنی ډبلی',
+        image: 'small.jpg',
+        filter: 'drinks',
+        theme: 'drinks',
+        sections: [
+          {
+            id: 'small-bottle-types',
+            title: 'Small Bottles',
+            titleLocal: 'کوچنی ډبلی',
+            variants: [
+              { id: 'small-bottle-sting', label: 'سټینګ', labelEn: 'Sting', price: 30 },
+              { id: 'small-bottle-s-ginseng', label: 'ایس ګنک', labelEn: 'S Ginseng', price: 25 },
+              { id: 'small-bottle-wow', label: 'واو', labelEn: 'Wow', price: 20 },
+              { id: 'small-bottle-coke', label: 'کوک', labelEn: 'Coke', price: 20 },
+              { id: 'small-bottle-breeze', label: 'بریز', labelEn: 'Breeze', price: 20 },
+              { id: 'small-bottle-magic', label: 'Magic', labelEn: 'Magic', price: 20 },
+              { id: 'small-bottle-pepsi', label: 'پیپسي', labelEn: 'Pepsi', price: 30 },
+              { id: 'small-bottle-7up', label: '7up', labelEn: '7up', price: 30 },
+              { id: 'small-bottle-rani', label: 'راني', labelEn: 'Rani', price: 30 },
+              { id: 'small-bottle-aloe-vera', label: 'الوپرا', labelEn: 'Aloe Vera', price: 30 },
+              { id: 'small-bottle-predator', label: 'پرډیټر', labelEn: 'Predator', price: 20 },
+              { id: 'small-bottle-xrun', label: 'Xrun', labelEn: 'Xrun', price: 20 },
+              { id: 'small-bottle-barbican', label: 'باربیکن', labelEn: 'Barbican', price: 70 },
+              { id: 'small-water', label: 'کوچنی اوبه', labelEn: 'Small Water', price: 10 },
+              { id: 'small-bottle-bermisha-juice', label: 'برمیشا جوس', labelEn: 'Bermisha Juice', price: 10 },
+              { id: 'small-bottle-small-monster', label: 'کوچنی منستر', labelEn: 'Small Monster', price: 90 },
+              { id: 'small-bottle-power-monster', label: 'پاور منستر', labelEn: 'Power Monster', price: 180 },
+              { id: 'small-bottle-purple-monster', label: 'ارغواني کباب منستر', labelEn: 'Purple Monster', price: 160 },
+              { id: 'small-bottle-large-monster', label: 'غټ منستر', labelEn: 'Large Monster', price: 130 },
+              { id: 'small-bottle-redbull', label: 'ریډ بول', labelEn: 'Red Bull', price: 160 },
+              { id: 'small-bottle-ginseng', label: 'جنسینګ', labelEn: 'Ginseng', price: 60 },
+              { id: 'small-bottle-sunrise-juice', label: 'سن رایز جوس', labelEn: 'Sunrise Juice', price: 90 },
+              { id: 'small-bottle-hit', label: 'هیټ', labelEn: 'Hit', price: 30 },
+              { id: 'small-bottle-alkozi', label: 'الکوزی', labelEn: 'Alkozi', price: 40 }
+            ]
+          }
+        ]
+      },
+      {
+        id: 'fresh-bar-juice',
+        name: 'Juices',
+        localName: 'جوس',
+        image: 'juise.jpg',
+        filter: 'drinks',
+        theme: 'juice',
+        sections: [
+          {
+            id: 'fresh-bar-juice-menu',
+            title: 'Juices',
+            titleLocal: 'جوس',
+            variants: [
+              { id: 'juice-blue-sky', label: 'بلو سکای', labelEn: 'Blue Sky', price: 60 },
+              { id: 'juice-souda-drink', label: 'سودا درینک', labelEn: 'Souda Drink', price: 60 },
+              { id: 'juice-limon-mint', label: 'لیمو او نانا', labelEn: 'Limon Mint', price: 60 },
+              { id: 'juice-s-drink', label: 'اېس درینک', labelEn: 'S Drink', price: 60 },
+              { id: 'juice-strawberry-souda', label: 'سټرابیري سودا درینک', labelEn: 'Strawberry Souda Drink', price: 60 },
+              { id: 'juice-blue-berry', label: 'بلو بیري', labelEn: 'Blue Berry', price: 60 },
+              { id: 'juice-majon-small', label: 'ماجون', labelEn: 'Majon', size: 'S', price: 100 },
+              { id: 'juice-majon-large', label: 'ماجون', labelEn: 'Majon', size: 'L', price: 150 },
+              { id: 'juice-sp-small', label: 'سپیشل جوس', labelEn: 'SP Juice', size: 'S', price: 80 },
+              { id: 'juice-sp-large', label: 'سپیشل جوس', labelEn: 'SP Juice', size: 'L', price: 100 },
+              { id: 'juice-banana-small', label: 'کیلې جوس', labelEn: 'Banana Juice', size: 'S', price: 80 },
+              { id: 'juice-banana-large', label: 'کیلې جوس', labelEn: 'Banana Juice', size: 'L', price: 100 },
+              { id: 'juice-apple-small', label: 'مڼې جوس', labelEn: 'Apple Juice', size: 'S', price: 50 },
+              { id: 'juice-apple-large', label: 'مڼې جوس', labelEn: 'Apple Juice', size: 'L', price: 70 },
+              { id: 'juice-pomegranate-small', label: 'انار جوس', labelEn: 'Pomegranate Juice', size: 'S', price: 80 },
+              { id: 'juice-pomegranate-large', label: 'انار جوس', labelEn: 'Pomegranate Juice', size: 'L', price: 100 },
+              { id: 'juice-orange-small', label: 'مالټې جوس', labelEn: 'Orange Juice', size: 'S', price: 80 },
+              { id: 'juice-orange-large', label: 'مالټې جوس', labelEn: 'Orange Juice', size: 'L', price: 100 },
+              { id: 'juice-pineapple-small', label: 'اناناس جوس', labelEn: 'Pineapple Juice', size: 'S', price: 80 },
+              { id: 'juice-pineapple-large', label: 'اناناس جوس', labelEn: 'Pineapple Juice', size: 'L', price: 100 },
+              { id: 'juice-strawberry-small', label: 'سټرابیري جوس', labelEn: 'Strawberry Juice', size: 'S', price: 80 },
+              { id: 'juice-strawberry-large', label: 'سټرابیري جوس', labelEn: 'Strawberry Juice', size: 'L', price: 100 },
+              { id: 'juice-chikoo-small', label: 'چیکو جوس', labelEn: 'Chikoo Juice', size: 'S', price: 90 },
+              { id: 'juice-chikoo-large', label: 'چیکو جوس', labelEn: 'Chikoo Juice', size: 'L', price: 130 },
+              { id: 'juice-mango-small', label: 'آم جوس', labelEn: 'Mango Juice', size: 'S', price: 50 },
+              { id: 'juice-mango-large', label: 'آم جوس', labelEn: 'Mango Juice', size: 'L', price: 80 },
+              { id: 'juice-sherikh-small', label: 'شېر یخ', labelEn: 'Sherikh', size: 'S', price: 70 },
+              { id: 'juice-sherikh-large', label: 'شېر یخ', labelEn: 'Sherikh', size: 'L', price: 100 }
+            ]
+          }
+        ]
+      },
+      {
+        id: 'tea-coffee',
+        name: 'Tea & Coffee',
+        localName: 'چای او کاپي',
+        image: 'tea.webp',
+        filter: 'tea',
+        theme: 'tea',
+        sections: [
+          {
+            id: 'tea-coffee-types',
+            title: 'Tea & Coffee',
+            titleLocal: 'چای او کاپي',
+            variants: [
+              { id: 'tea-fresh-bar', label: 'فریش بار', labelEn: 'Fresh Bar', price: 50 },
+              { id: 'tea-ice-coffee', label: 'کافي آیس', labelEn: 'Ice Coffee', price: 70 },
+              { id: 'tea-pistachio-coffee', label: 'کافي پسته', labelEn: 'Pistachio Coffee', price: 70 },
+              { id: 'tea-saffron-coffee', label: 'کافي زعفراني', labelEn: 'Saffron Coffee', price: 70 },
+              { id: 'tea-chocolate-coffee', label: 'کافي چاکلیټ', labelEn: 'Chocolate Coffee', price: 70 },
+              { id: 'tea-hot-chocolate', label: 'هاټ چاکلیټ', labelEn: 'Hot Chocolate', price: 50 },
+              { id: 'tea-bitter-coffee', label: 'ترخه کافي', labelEn: 'Bitter Coffee', price: 30 },
+              { id: 'tea-plain-saffron', label: 'ساده زعفراني', labelEn: 'Plain Saffron Tea', price: 100 },
+              { id: 'tea-cappuccino', label: 'کافي چینو', labelEn: 'Cappuccino', price: 50 },
+              { id: 'tea-lemon-tea', label: 'لیمو چای', labelEn: 'Lemon Tea', price: 290 }
+            ]
+          }
+        ]
+      },
+      {
+        id: 'ice-cream',
+        name: 'Ice Cream',
+        localName: 'ایسکریم',
+        image: 'iscrem.jpg',
+        filter: 'dessert',
+        theme: 'icecream',
+        sections: [
+          {
+            id: 'ice-cream-types',
+            title: 'Ice Cream',
+            titleLocal: 'ایسکریم',
+            variants: [
+              { id: 'ice-vanilla', label: 'وینیلا ایسکریم', labelEn: 'Vanilla Ice Cream', price: 50, priceNote: '50-80' },
+              { id: 'ice-coconut', label: 'کوکونټ', labelEn: 'Coconut', price: 50, priceNote: '50-80' },
+              { id: 'ice-strawberry', label: 'سټرابیری', labelEn: 'Strawberry', price: 50, priceNote: '50-80' },
+              { id: 'ice-mango', label: 'ام ایسکریم', labelEn: 'Mango Ice Cream', price: 50, priceNote: '50-80' },
+              { id: 'ice-banana', label: 'کیله ایسکریم', labelEn: 'Banana Ice Cream', price: 50, priceNote: '50-80' },
+              { id: 'ice-family-pack', label: 'فامیلی پیک', labelEn: 'Family Pack', price: 100 },
+              { id: 'ice-cashew-chocolate', label: 'کاجو چاکلیټ', labelEn: 'Cashew Chocolate', price: 50, priceNote: '50-80' },
+              { id: 'ice-pistachio', label: 'پیسته', labelEn: 'Pistachio', price: 50, priceNote: '50-80' },
+              { id: 'ice-blueberry', label: 'بلوبیری', labelEn: 'Blueberry', price: 50, priceNote: '50-80' },
+              { id: 'ice-shirin-khas', label: 'شیرین خاص', labelEn: 'Shirin Khas', price: 40 }
+            ]
+          }
+        ]
+      }
+    ];
+
+  const customItems = Array.isArray(window.AsadBurgerKingCustomMenu)
+    ? window.AsadBurgerKingCustomMenu
+    : [];
+
+  customItems.forEach((item) => {
+    const group = menuGroups.find((entry) => entry.id === item.groupId);
+    if (!group) return;
+    if (!Array.isArray(group.sections) || !group.sections.length) {
+      group.sections = [{ id: `${group.id}-custom`, title: group.name, titleLocal: group.localName, variants: [] }];
+    }
+    const section = group.sections[0];
+    if (!Array.isArray(section.variants)) section.variants = [];
+    section.variants.push({
+      id: item.id,
+      label: item.name,
+      labelEn: item.englishName || item.name,
+      price: Number(item.price) || 0,
+      custom: true
+    });
+  });
+
+  const deletedItemIds = Array.isArray(window.AsadBurgerKingDeletedMenuItems)
+    ? window.AsadBurgerKingDeletedMenuItems
+    : [];
+  if (deletedItemIds.length) {
+    const deletedItemSet = new Set(deletedItemIds);
+    menuGroups.forEach((group) => {
+      (group.sections || []).forEach((section) => {
+        section.variants = (section.variants || []).filter((variant) => !deletedItemSet.has(variant.id));
+      });
+    });
+  }
+
+  const savedPrices = window.AsadBurgerKingMenuPrices || {};
+  menuGroups.forEach((group) => {
+    (group.sections || []).forEach((section) => {
+      (section.variants || []).forEach((variant) => {
+        const savedPrice = Number(savedPrices[variant.id]);
+        if (savedPrice > 0) variant.price = savedPrice;
+        if (Array.isArray(variant.priceOptions)) {
+          variant.priceOptions = variant.priceOptions.map((price, optionIndex) => {
+            const optionPrice = Number(savedPrices[`${variant.id}-option-${optionIndex}`]);
+            return optionPrice > 0 ? optionPrice : price;
+          });
+        }
+      });
+    });
+  });
+
+  window.AsadBurgerKingMenuGroups = menuGroups;
+
+  window.AsadBurgerKingApplyMenuUpdate = function applyMenuUpdate(update) {
+    if (!update || !update.action) return false;
+
+    if (update.action === 'added' && update.item) {
+      const item = update.item;
+      const group = menuGroups.find((entry) => entry.id === item.groupId);
+      if (!group) return false;
+      if (!Array.isArray(group.sections) || !group.sections.length) {
+        group.sections = [{ id: `${group.id}-custom`, title: group.name, titleLocal: group.localName, variants: [] }];
+      }
+      const section = group.sections[0];
+      if (!Array.isArray(section.variants)) section.variants = [];
+      if (section.variants.some((variant) => variant.id === item.id)) return false;
+      section.variants.push({
+        id: item.id,
+        label: item.name,
+        labelEn: item.englishName || item.name,
+        price: Number(item.price) || 0,
+        custom: true
+      });
+      return true;
+    }
+
+    if (update.action === 'deleted' && update.itemId) {
+      let changed = false;
+      menuGroups.forEach((group) => {
+        (group.sections || []).forEach((section) => {
+          const before = (section.variants || []).length;
+          section.variants = (section.variants || []).filter((variant) => variant.id !== update.itemId);
+          if (section.variants.length !== before) changed = true;
+        });
+      });
+      return changed;
+    }
+
+    if (update.action === 'price_updated' && update.itemId) {
+      for (const group of menuGroups) {
+        for (const section of (group.sections || [])) {
+          const variant = (section.variants || []).find((item) => item.id === update.itemId);
+          if (variant) {
+            const nextPrice = Number(update.price) || variant.price;
+            if (variant.price === nextPrice) return false;
+            variant.price = nextPrice;
+            return true;
+          }
+          const optionMatch = String(update.itemId).match(/^(.*)-option-(\d+)$/);
+          if (optionMatch) {
+            const optionVariant = (section.variants || []).find((item) => item.id === optionMatch[1]);
+            const optionIndex = Number(optionMatch[2]);
+            if (optionVariant && Array.isArray(optionVariant.priceOptions) && optionIndex < optionVariant.priceOptions.length) {
+              const nextPrice = Number(update.price) || optionVariant.priceOptions[optionIndex];
+              if (optionVariant.priceOptions[optionIndex] === nextPrice) return false;
+              optionVariant.priceOptions[optionIndex] = nextPrice;
+              return true;
+            }
+          }
+        }
+      }
+    }
+
+    return false;
+  };
+
+  async function syncSavedMenuPrices() {
+    try {
+      const response = await fetch('/api/menu/prices', { cache: 'no-store' });
+      if (!response.ok) return;
+      const data = await response.json();
+      let changed = false;
+      (data.customItems || []).forEach((item) => {
+        if (window.AsadBurgerKingApplyMenuUpdate({ action: 'added', item })) changed = true;
+      });
+      (data.deletedItemIds || []).forEach((itemId) => {
+        if (window.AsadBurgerKingApplyMenuUpdate({ action: 'deleted', itemId })) changed = true;
+      });
+      Object.entries(data.prices || {}).forEach(([itemId, price]) => {
+        if (window.AsadBurgerKingApplyMenuUpdate({ action: 'price_updated', itemId, price })) {
+          changed = true;
+        }
+      });
+      if (changed) window.dispatchEvent(new CustomEvent('asad-menu-prices-updated'));
+    } catch (_error) {
+      // Offline pages keep their last cached menu and retry automatically.
+    }
+  }
+
+  window.AsadBurgerKingSyncMenuPrices = syncSavedMenuPrices;
+  syncSavedMenuPrices();
+  window.setInterval(syncSavedMenuPrices, 5000);
+}());

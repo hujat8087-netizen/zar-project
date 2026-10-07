@@ -1,0 +1,25 @@
+{
+  "name": "Zarchinar Restaurant Operations",
+  "short_name": "Zarchinar Restaurant",
+  "description": "Offline LAN waiter, delivery, kitchen, and counter workflow.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f6f5f2",
+  "theme_color": "#18202f",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/images/kabuli.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any"
+    },
+    {
+      "src": "/asad.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any"
+    }
+  ]
+}

@@ -1,0 +1,709 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#18202f" />
+  <title>فیک اډر | Zarchinar Restaurant</title>
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="stylesheet" href="/styles.css" />
+  <script src="/theme.js"></script>
+  <script src="/password-toggle.js"></script>
+  <script src="/auth.js?v=3"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/menu-custom.js?v=48"></script>
+  <script src="/menu-data.js?v=65"></script>
+</head>
+<body>
+  <section id="loginScreen" class="login-screen">
+    <div class="login-panel">
+      <p class="eyebrow">Zarchinar Restaurant</p>
+      <h1>فیک اډر Login</h1>
+      <p>فیک اډر برخه</p>
+      <div class="field">
+        <label for="fakeOrderPassword">Password</label>
+        <div class="password-field">
+          <input id="fakeOrderPassword" class="input" type="password" autocomplete="current-password" placeholder="Enter password" />
+          <button type="button" class="password-toggle" data-password-toggle aria-controls="fakeOrderPassword" aria-label="Show password" aria-pressed="false">Show</button>
+        </div>
+      </div>
+      <div style="height: 12px"></div>
+      <button id="loginButton" class="button primary" type="button">Login</button>
+      <div id="loginMessage" class="notice danger hidden" style="margin-top: 12px"></div>
+    </div>
+  </section>
+
+  <div id="app" class="app-shell hidden">
+    <header class="app-header">
+      <div class="header-inner">
+        <a class="brand-block" href="/">
+          <span class="brand-mark" aria-hidden="true">ار</span>
+          <div class="brand-text">
+            <p class="eyebrow">فیک اډر</p>
+            <h1 class="brand-title">Zarchinar Restaurant</h1>
+            <p class="brand-subtitle">د وایټر له مینو څخه فیک اډر کونټر ته</p>
+          </div>
+        </a>
+        <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="appNav" aria-label="Open menu">
+          <span></span><span></span><span></span>
+        </button>
+        <div class="header-end" id="appNav">
+          <nav class="header-nav" aria-label="Role navigation">
+            <div class="nav-pills">
+              <a class="nav-link" href="/">Home</a>
+              <a class="nav-link" href="/waiter.html">Waiter</a>
+              <a class="nav-link" href="/delivery.html">Delivery</a>
+              <a class="nav-link active" href="/fake-order.html">فیک اډر</a>
+              <a class="nav-link" href="/counter.html">Counter</a>
+            </div>
+          </nav>
+          <div class="header-tools">
+            <span id="offlineBadge" class="status-chip warning">Checking</span>
+            <button id="logoutButton" class="tool-button" type="button">Logout</button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div id="readyBanner" class="ready-banner hidden"></div>
+
+    <main class="page">
+      <section class="stat-grid" aria-label="Fake order stats">
+        <div class="stat">
+          <div class="stat-label">Open fake orders</div>
+          <div id="statOpen" class="stat-value">0</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Preparing</div>
+          <div id="statPreparing" class="stat-value">0</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Ready</div>
+          <div id="statReady" class="stat-value">0</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Fake order status</div>
+          <div id="connectionStatusStat" class="stat-value" style="font-size: 1.2rem">Connecting</div>
+        </div>
+      </section>
+
+      <div class="page-grid">
+        <section class="panel">
+          <div class="panel-header">
+            <div>
+              <h2 class="panel-title">فیک اډر</h2>
+              <p class="panel-kicker">له وایټر مینو څخه فیک اډر</p>
+            </div>
+            <span id="connectionStatus" class="chip warning">Connecting</span>
+          </div>
+
+          <div class="field-grid">
+            <div class="field">
+              <label for="customerPhone">Order Name</label>
+              <input id="customerPhone" class="input" type="text" placeholder="فیک اډر" />
+            </div>
+            <div class="field">
+              <label for="customerName">Staff</label>
+              <input id="customerName" class="input" type="text" placeholder="فیک اډر" />
+            </div>
+            <div class="field span-12">
+              <label for="orderNote">Notes</label>
+              <input id="orderNote" class="input" type="text" placeholder="Extra sauce, call before arrival..." />
+            </div>
+          </div>
+
+          <div style="height: 18px"></div>
+
+          <section class="menu-section" id="menuSection">
+            <div class="menu-section-head">
+              <div class="panel-header menu-panel-header">
+                <div>
+                  <h2 class="panel-title">Menu</h2>
+                  <p class="panel-kicker">هماغه مکمل مینو</p>
+                </div>
+                <button id="clearOrderButton" class="button ghost menu-clear-btn" type="button">Clear</button>
+              </div>
+              <div id="menuFilters" class="menu-filters" role="tablist" aria-label="Menu categories">
+                <button class="menu-filter active" type="button" data-filter="food" role="tab" aria-selected="true">خواړه</button>
+                <button class="menu-filter" type="button" data-filter="deals" role="tab" aria-selected="false">ډیلونه</button>
+                <button class="menu-filter" type="button" data-filter="drinks" role="tab" aria-selected="false">مشروباط</button>
+                <button class="menu-filter" type="button" data-filter="tea" role="tab" aria-selected="false">چای او کاپي</button>
+                <button class="menu-filter" type="button" data-filter="dessert" role="tab" aria-selected="false">شیریخ او آیسکریم</button>
+              </div>
+            </div>
+            <div id="menuList" class="menu-list"></div>
+          </section>
+        </section>
+
+        <aside class="panel">
+          <div class="panel-header">
+            <div>
+              <h2 class="panel-title">فیک اډر Ticket</h2>
+              <p class="panel-kicker">ارډر خلاصه</p>
+            </div>
+            <span id="ticketCount" class="chip">0 items</span>
+          </div>
+          <div id="summaryList" class="summary-list"></div>
+          <div class="summary-total">
+            <span>Total</span>
+            <span id="summaryTotal">0 AFN</span>
+          </div>
+          <div style="height: 14px"></div>
+          <button id="sendOrderButton" class="button success" type="button">فیک اډر ولیږه</button>
+          <div id="toast" class="notice hidden" style="margin-top: 12px"></div>
+
+          <div style="height: 18px"></div>
+
+          <div class="panel-header">
+            <div>
+              <h2 class="panel-title">Ready Alerts</h2>
+              <p class="panel-kicker">د چمتو ارډر خبرتیا</p>
+            </div>
+          </div>
+          <div id="readyAlertsList" class="summary-list"></div>
+        </aside>
+      </div>
+
+      <section class="panel" style="margin-top: 18px">
+        <div class="panel-header">
+          <div>
+            <h2 class="panel-title">Active فیک اډر</h2>
+            <p class="panel-kicker">Counter ته لیږل شوي ارډرونه</p>
+          </div>
+          <span id="activeOrderCount" class="chip">0 orders</span>
+        </div>
+        <div id="activeDeliveryList" class="orders-list"></div>
+      </section>
+    </main>
+  </div>
+
+  <script src="/header-nav.js"></script>
+  <script src="/offline.js"></script>
+  <script>
+    const PAGE_ROLE = 'fakeOrder';
+    const menuGroups = window.AsadBurgerKingMenuGroups || [];
+    const $ = (id) => document.getElementById(id);
+    const money = (value) => `${Math.round(Number(value) || 0).toLocaleString()} AFN`;
+    const menuImageSrc = (image) => !image ? '' : (image.startsWith('/') ? image : `/images/${image}`);
+    const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+    }[char]));
+
+    function displayItemName(value) {
+      let text = String(value ?? '').trim();
+      if (!text) return '';
+      if (text.includes('·')) text = text.split('·').map((part) => part.trim()).filter(Boolean).slice(-1)[0] || text;
+      if (text.includes('/')) text = text.split('/').map((part) => part.trim()).filter(Boolean)[0] || text;
+      const platterSuffixMatch = text.match(/^نفري\s*-\s*(.+?)\s*([۰-۹٠-٩0-9]+)$/);
+      const platterPrefixMatch = text.match(/^([۰-۹٠-٩0-9]+)\s*نفري\s*-\s*(.+)$/);
+      if (platterSuffixMatch) text = `${platterSuffixMatch[1]} ${platterSuffixMatch[2]} نفری`;
+      else if (platterPrefixMatch) text = `${platterPrefixMatch[2]} ${platterPrefixMatch[1]} نفری`;
+      return text.replace(/\s+/g, ' ').trim();
+    }
+
+    function variantOrderName(variant) {
+      if (!variant.size) return displayItemName(variant.label);
+      return `${displayItemName(variant.label)} — ${variant.size}`;
+    }
+
+    function getSelectableVariants(variant, group = variant.group, section = variant.section) {
+      if (!Array.isArray(variant.priceOptions) || !variant.priceOptions.length) return [{ ...variant, group, section }];
+      return variant.priceOptions.map((price) => ({
+        ...variant, id: `${variant.id}-${price}`, parentId: variant.id, price, priceOption: price, group, section
+      }));
+    }
+
+    function flattenMenuVariants() {
+      return menuGroups.flatMap((group) => {
+        if (group.sections) return group.sections.flatMap((section) => section.variants.flatMap((variant) => getSelectableVariants(variant, group, section)));
+        return (group.variants || []).flatMap((variant) => getSelectableVariants(variant, group, null));
+      });
+    }
+
+    const allMenuVariants = flattenMenuVariants();
+    const state = {
+      socket: null,
+      quantities: Object.fromEntries(allMenuVariants.map((variant) => [variant.id, 0])),
+      menuFilter: 'food',
+      expandedMenuGroup: null,
+      expandedPriceRows: new Set(),
+      snapshot: { activeOrders: [], stats: {} },
+      readyAlerts: []
+    };
+
+    async function checkPassword() {
+      const role = await window.KandaharAuth.loginWithPassword($('fakeOrderPassword').value);
+      if (!role) {
+        $('loginMessage').textContent = 'غلط پاسورډ / Incorrect password';
+        $('loginMessage').classList.remove('hidden');
+        return;
+      }
+      if (role.key !== PAGE_ROLE) return window.KandaharAuth.redirectToRole(role.key);
+      window.KandaharAuth.showLoginIntro(role, unlockPage);
+    }
+
+    function unlockPage() {
+      $('loginScreen').classList.add('hidden');
+      $('app').classList.remove('hidden');
+      startApp();
+    }
+
+    function checkExistingLogin() {
+      const roleKey = window.KandaharAuth.currentRole();
+      if (!roleKey) return;
+      if (roleKey !== PAGE_ROLE) return window.KandaharAuth.redirectToRole(roleKey);
+      unlockPage();
+    }
+
+    function startApp() {
+      if (state.socket) return;
+      renderMenu();
+      renderSummary();
+      renderDeliveryBoard();
+      state.socket = io({ transports: ['websocket', 'polling'] });
+      state.socket.on('connect', () => {
+        $('connectionStatus').textContent = 'Live';
+        $('connectionStatus').className = 'chip ready';
+        if ($('connectionStatusStat')) $('connectionStatusStat').textContent = 'Live';
+        state.socket.emit('request_snapshot');
+      });
+      state.socket.on('disconnect', () => {
+        $('connectionStatus').textContent = 'Offline';
+        $('connectionStatus').className = 'chip warning';
+        if ($('connectionStatusStat')) $('connectionStatusStat').textContent = 'Offline';
+      });
+      state.socket.on('snapshot', (snapshot) => {
+        state.snapshot = snapshot || state.snapshot;
+        renderDeliveryBoard();
+      });
+      state.socket.on('active_orders', (orders) => {
+        if (!Array.isArray(orders)) return;
+        state.snapshot = { ...state.snapshot, activeOrders: orders };
+        renderDeliveryBoard();
+      });
+      state.socket.on('order_created', (order) => {
+        upsertDeliveryOrder(order);
+      });
+      state.socket.on('order_ready_notification', (data) => {
+        if (data && data.orderType === 'fake') handleDeliveryReady(data);
+      });
+      state.socket.on('order_updated_notification', (data) => {
+        if (!data || !data.orderId) return;
+        const orders = state.snapshot.activeOrders || [];
+        const existing = orders.find((order) => order.id === data.orderId);
+        if (existing && existing.orderType === 'fake') {
+          showToast(`فیک اډر updated: ${formatOrderChanges(data.changes || [])}`, 'success');
+        }
+        state.socket.emit('request_snapshot');
+      });
+      state.socket.on('app_error', (error) => showToast(error.message || 'Server error', 'danger'));
+      state.socket.on('menu_updated', (update) => {
+        if (window.AsadBurgerKingApplyMenuUpdate?.(update)) {
+          renderMenu();
+          showToast(update.action === 'added' ? 'نوی خوراک مینیو ته اضافه شو' : 'مینیو تازه شو', 'success');
+        }
+      });
+      window.addEventListener('asad-menu-prices-updated', renderMenu);
+    }
+
+    function getDeliveryOrders() {
+      return (state.snapshot.activeOrders || []).filter((order) => order.orderType === 'fake');
+    }
+
+    function upsertDeliveryOrder(order) {
+      if (!order || !order.id || order.orderType !== 'fake') return;
+      const orders = state.snapshot.activeOrders || [];
+      const index = orders.findIndex((item) => item.id === order.id);
+      const nextOrders = index === -1
+        ? [order, ...orders]
+        : orders.map((item) => (item.id === order.id ? { ...item, ...order } : item));
+      state.snapshot = { ...state.snapshot, activeOrders: nextOrders };
+      renderDeliveryBoard();
+    }
+
+    function renderDeliveryBoard() {
+      renderDeliveryStats();
+      renderActiveDeliveryOrders();
+      renderReadyAlerts();
+    }
+
+    function renderDeliveryStats() {
+      const orders = getDeliveryOrders();
+      const preparing = orders.filter((order) => order.status !== 'ready').length;
+      const ready = orders.filter((order) => order.status === 'ready').length;
+      $('statOpen').textContent = orders.length;
+      $('statPreparing').textContent = preparing;
+      $('statReady').textContent = ready;
+      $('activeOrderCount').textContent = `${orders.length} order${orders.length === 1 ? '' : 's'}`;
+    }
+
+    function orderStatusLabel(order) {
+      if (order.status === 'ready') return 'Ready';
+      if (order.status === 'updated') return 'Updated';
+      return 'Preparing';
+    }
+
+    function orderStatusClass(order) {
+      if (order.status === 'ready') return 'ready';
+      if (order.status === 'updated') return 'warning';
+      return 'warning';
+    }
+
+    function formatTime(value) {
+      if (!value) return '';
+      return new Date(value).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function formatDateTime(value) {
+      if (!value) return '';
+      return new Date(value).toLocaleString([], {
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+
+    function formatOrderChanges(changes) {
+      if (!changes || !changes.length) return 'No quantity changes';
+      return changes.map((change) => `${change.deltaQty > 0 ? '+' : ''}${change.deltaQty} ${displayItemName(change.name)}`).join(', ');
+    }
+
+    function renderActiveDeliveryOrders() {
+      const orders = getDeliveryOrders()
+        .slice()
+        .sort((a, b) => {
+          if (a.status === b.status) return Date.parse(b.createdAt) - Date.parse(a.createdAt);
+          return a.status === 'ready' ? -1 : 1;
+        });
+
+      if (!orders.length) {
+        $('activeDeliveryList').innerHTML = '<div class="empty-state">No active fake orders</div>';
+        return;
+      }
+
+      $('activeDeliveryList').innerHTML = orders.map((order) => `
+        <article class="order-card ${order.status === 'ready' ? 'ready' : 'new'}">
+          <div class="card-top">
+            <div>
+              <h3 class="card-title">فیک اډر</h3>
+              <p class="card-subtitle">${escapeHtml(order.customerPhone || '')} · ${formatTime(order.createdAt)}</p>
+              ${order.deliveryAddress ? `<p class="card-subtitle">${escapeHtml(order.deliveryAddress)}</p>` : ''}
+            </div>
+            <div class="chip-row">
+              <span class="chip ${orderStatusClass(order)}">${orderStatusLabel(order)}</span>
+              <span class="chip">${money(order.total)}</span>
+            </div>
+          </div>
+          <div>
+            ${(order.items || []).map((item) => `
+              <div class="item-line">
+                <span><strong>${escapeHtml(item.qty)} × ${escapeHtml(displayItemName(item.name))}</strong></span>
+                <span>${money(item.lineTotal || item.price * item.qty)}</span>
+              </div>
+            `).join('')}
+          </div>
+          ${order.note ? `<div class="notice" style="margin-top: 10px">${escapeHtml(order.note)}</div>` : ''}
+          ${order.status === 'ready' ? `<div class="notice success" style="margin-top: 10px">چمتو دی · Ready at ${formatTime(order.readyAt)}</div>` : ''}
+        </article>
+      `).join('');
+    }
+
+    function renderReadyAlerts() {
+      const list = $('readyAlertsList');
+      if (!list) return;
+
+      if (!state.readyAlerts.length) {
+        list.innerHTML = '<div class="empty-state compact">No ready alerts yet</div>';
+        return;
+      }
+
+      list.innerHTML = state.readyAlerts.map((alert) => `
+        <div class="notice success ready-alert-card">
+          <strong>فیک اډر ready</strong>
+          <div>${escapeHtml(alert.customerPhone || '')}${alert.deliveryAddress ? ` · ${escapeHtml(alert.deliveryAddress)}` : ''}</div>
+          <div class="card-subtitle">${escapeHtml(formatDateTime(alert.readyAt))}</div>
+          <button class="button ghost" type="button" data-dismiss-alert="${escapeHtml(alert.id)}">خبر شوم / Clear</button>
+        </div>
+      `).join('');
+    }
+
+    function handleDeliveryReady(data) {
+      if (!data || data.orderType !== 'fake') return;
+
+      const orders = state.snapshot.activeOrders || [];
+      const index = orders.findIndex((order) => order.id === data.orderId);
+      if (index !== -1) {
+        const nextOrders = orders.map((order) => (
+          order.id === data.orderId
+            ? { ...order, status: 'ready', readyAt: data.readyAt || new Date().toISOString() }
+            : order
+        ));
+        state.snapshot = { ...state.snapshot, activeOrders: nextOrders };
+      }
+
+      const message = 'فیک اډر ready';
+      state.readyAlerts = [
+        {
+          id: data.orderId || `${Date.now()}`,
+          orderId: data.orderId,
+          customerName: data.customerName || '',
+          customerPhone: data.customerPhone || '',
+          deliveryAddress: data.deliveryAddress || '',
+          readyAt: data.readyAt || new Date().toISOString()
+        },
+        ...state.readyAlerts.filter((alert) => alert.orderId !== data.orderId)
+      ].slice(0, 10);
+
+      renderDeliveryBoard();
+
+      const banner = $('readyBanner');
+      banner.textContent = message;
+      banner.classList.remove('hidden');
+      showToast(message, 'success');
+      playReadyAlert();
+
+      try {
+        if ('speechSynthesis' in window) {
+          window.speechSynthesis.cancel();
+          const voice = new SpeechSynthesisUtterance('Fake order ready.');
+          voice.rate = 0.94;
+          window.speechSynthesis.speak(voice);
+        }
+      } catch (error) {
+        console.warn('Speech notification failed', error);
+      }
+
+      clearTimeout(window.__deliveryReadyBannerTimeout);
+      window.__deliveryReadyBannerTimeout = setTimeout(() => banner.classList.add('hidden'), 8000);
+    }
+
+    function dismissReadyAlert(alertId) {
+      state.readyAlerts = state.readyAlerts.filter((alert) => alert.id !== alertId);
+      renderReadyAlerts();
+      if (!state.readyAlerts.length) {
+        $('readyBanner').classList.add('hidden');
+      }
+    }
+
+    function playReadyAlert() {
+      try {
+        if ('vibrate' in navigator) {
+          navigator.vibrate([250, 120, 250, 120, 350]);
+        }
+      } catch (error) {
+        console.warn('Vibration failed', error);
+      }
+    }
+
+    function getGroupVariants(group) {
+      const expand = (variants) => variants.flatMap((variant) => getSelectableVariants(variant));
+      return group.sections ? group.sections.flatMap((section) => expand(section.variants)) : expand(group.variants || []);
+    }
+
+    function getGroupQty(group) {
+      return getGroupVariants(group).reduce((sum, variant) => sum + (state.quantities[variant.id] || 0), 0);
+    }
+
+    function formatVariantPrice(variant) {
+      if (Array.isArray(variant.priceOptions) && variant.priceOptions.length) return `${variant.priceOptions.join(' / ')} AFN`;
+      if (variant.priceNote) return `${variant.priceNote} AFN`;
+      return money(variant.price);
+    }
+
+    function renderVariantRow(variant, group) {
+      const options = getSelectableVariants(variant, group);
+      const hasOptions = Array.isArray(variant.priceOptions) && variant.priceOptions.length;
+      const qty = options.reduce((sum, option) => sum + (state.quantities[option.id] || 0), 0);
+      const open = hasOptions && (state.expandedPriceRows.has(variant.id) || qty > 0);
+      return `
+        <div class="menu-variant-row menu-variant-row--${group.theme || 'drinks'}${hasOptions ? ' menu-variant-row--has-options' : ''}${open ? ' is-price-open' : ''}${qty ? ' is-active' : ''}">
+          <div class="menu-variant-main menu-variant-main--card">
+            <span class="menu-price-badge menu-price-badge--${group.theme || 'drinks'}">${escapeHtml(formatVariantPrice(variant))}</span>
+            <div class="menu-variant-copy">
+              <strong dir="rtl">${escapeHtml(variant.label)}${variant.size ? ` — ${escapeHtml(variant.size)}` : ''}</strong>
+              ${variant.labelEn ? `<span>${escapeHtml(variant.labelEn)}</span>` : ''}
+            </div>
+          </div>
+          ${hasOptions ? `
+            <button class="button ghost menu-price-options-toggle" type="button" data-action="price-options" data-id="${escapeHtml(variant.id)}">${open ? 'قیمتونه پټ کړه' : 'قیمتونه ښکاره کړه'}</button>
+            <div class="menu-price-options">
+              ${options.map((option) => `
+                <div class="menu-price-option${state.quantities[option.id] ? ' is-active' : ''}">
+                  <span class="menu-price-option-badge">${escapeHtml(money(option.price))}</span>
+                  <div class="stepper">
+                    <button class="icon-button stepper-btn" type="button" data-action="qty" data-id="${escapeHtml(option.id)}" data-delta="-1">−</button>
+                    <span id="qty-${escapeHtml(option.id)}" class="stepper-value">${state.quantities[option.id] || 0}</span>
+                    <button class="icon-button stepper-btn" type="button" data-action="qty" data-id="${escapeHtml(option.id)}" data-delta="1">+</button>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          ` : `
+            <div class="stepper">
+              <button class="icon-button stepper-btn" type="button" data-action="qty" data-id="${escapeHtml(variant.id)}" data-delta="-1">−</button>
+              <span id="qty-${escapeHtml(variant.id)}" class="stepper-value">${qty}</span>
+              <button class="icon-button stepper-btn" type="button" data-action="qty" data-id="${escapeHtml(variant.id)}" data-delta="1">+</button>
+            </div>
+          `}
+        </div>
+      `;
+    }
+
+    function renderGroupVariants(group) {
+      const sectionTheme = group.theme ? ` menu-variant-section--${group.theme}` : '';
+      if (group.sections) {
+        return group.sections.map((section) => `
+          <section class="menu-variant-section${sectionTheme}">
+            <div class="menu-variant-section-head">
+              <h4 class="menu-section-title">${escapeHtml(section.titleLocal)}</h4>
+              <span class="menu-section-sub">${escapeHtml(section.title)}</span>
+            </div>
+            <div class="menu-section-items">${section.variants.map((variant) => renderVariantRow(variant, group)).join('')}</div>
+          </section>
+        `).join('');
+      }
+      return (group.variants || []).map((variant) => renderVariantRow(variant, group)).join('');
+    }
+
+    function renderMenu() {
+      const groups = menuGroups.filter((group) => group.filter === state.menuFilter);
+      $('menuList').innerHTML = groups.map((group) => {
+        const isOpen = state.expandedMenuGroup === group.id;
+        const groupQty = getGroupQty(group);
+        return `
+          <article class="menu-group menu-group-rich${group.theme ? ` menu-group--${group.theme}` : ''}${isOpen ? ' is-open' : ''}${groupQty ? ' is-selected' : ''}" data-group="${escapeHtml(group.id)}">
+            <button class="menu-group-toggle" type="button" data-group-toggle="${escapeHtml(group.id)}" aria-expanded="${isOpen ? 'true' : 'false'}">
+              <div class="menu-image-wrap"><img class="menu-image" src="${escapeHtml(menuImageSrc(group.image))}" alt="${escapeHtml(group.name)}" loading="lazy" /></div>
+              <div class="menu-row-body">
+                <h3 class="menu-name">${escapeHtml(group.name)}</h3>
+                <p class="menu-local">${escapeHtml(group.localName)}</p>
+                <p class="menu-hint">${getGroupVariants(group).length} ډولونه</p>
+              </div>
+              <span class="menu-badge${groupQty ? '' : ' hidden'}">${groupQty}</span>
+              <span class="menu-chevron" aria-hidden="true"></span>
+            </button>
+            <div class="menu-variants">${renderGroupVariants(group)}</div>
+          </article>
+        `;
+      }).join('') || '<div class="menu-empty empty-state compact">په دې برخه کې توکی نشته</div>';
+    }
+
+    function setMenuFilter(filterKey) {
+      state.menuFilter = filterKey;
+      state.expandedMenuGroup = null;
+      document.querySelectorAll('.menu-filter').forEach((button) => {
+        const active = button.dataset.filter === filterKey;
+        button.classList.toggle('active', active);
+        button.setAttribute('aria-selected', active ? 'true' : 'false');
+      });
+      renderMenu();
+    }
+
+    function changeQty(id, delta) {
+      state.quantities[id] = Math.max(0, (state.quantities[id] || 0) + delta);
+      renderMenu();
+      renderSummary();
+    }
+
+    function getSelectedItems() {
+      return allMenuVariants.filter((variant) => state.quantities[variant.id] > 0).map((variant) => ({
+        id: variant.id,
+        name: variantOrderName(variant),
+        price: variant.price,
+        qty: state.quantities[variant.id],
+        image: menuImageSrc(variant.group.image)
+      }));
+    }
+
+    function renderSummary() {
+      const items = getSelectedItems();
+      const total = items.reduce((sum, item) => sum + item.price * item.qty, 0);
+      $('ticketCount').textContent = `${items.reduce((sum, item) => sum + item.qty, 0)} items`;
+      $('summaryTotal').textContent = money(total);
+      $('sendOrderButton').disabled = !items.length;
+      $('summaryList').innerHTML = items.length ? items.map((item) => `
+        <div class="summary-line">
+          <div>
+            <strong>${escapeHtml(item.qty)} × ${escapeHtml(displayItemName(item.name))}</strong>
+            <div class="card-subtitle">${money(item.price)} each</div>
+          </div>
+          <strong>${money(item.price * item.qty)}</strong>
+        </div>
+      `).join('') : '<div class="empty-state">No items selected</div>';
+    }
+
+    function clearOrder() {
+      Object.keys(state.quantities).forEach((id) => { state.quantities[id] = 0; });
+      ['customerPhone', 'customerName', 'orderNote'].forEach((id) => { $(id).value = ''; });
+      renderMenu();
+      renderSummary();
+    }
+
+    function submitOrder() {
+      const items = getSelectedItems();
+      if (!items.length) return showToast('Select menu items', 'danger');
+      if (!state.socket || !state.socket.connected) return showToast('Server offline', 'danger');
+
+      $('sendOrderButton').disabled = true;
+      state.socket.emit('new_order', {
+        orderType: 'fake',
+        waiterName: 'فیک اډر',
+        customerPhone: $('customerPhone').value.trim() || 'فیک اډر',
+        customerName: $('customerName').value.trim() || 'فیک اډر',
+        deliveryAddress: '',
+        note: $('orderNote').value.trim(),
+        items
+      }, (response) => {
+        $('sendOrderButton').disabled = false;
+        if (!response || !response.ok) return showToast((response && response.message) || 'Order failed', 'danger');
+        clearOrder();
+        showToast('فیک اډر کونټر ته ولیږل شو.', 'success');
+        renderDeliveryBoard();
+      });
+    }
+
+    function showToast(message, type) {
+      const toast = $('toast');
+      toast.textContent = message;
+      toast.className = `notice ${type === 'danger' ? 'danger' : 'success'}`;
+      toast.classList.remove('hidden');
+      clearTimeout(window.__toastTimeout);
+      window.__toastTimeout = setTimeout(() => toast.classList.add('hidden'), 4200);
+    }
+
+    $('loginButton').addEventListener('click', checkPassword);
+    $('fakeOrderPassword').addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') checkPassword();
+    });
+    $('menuList').addEventListener('click', (event) => {
+      const qtyButton = event.target.closest('[data-action="qty"]');
+      if (qtyButton) return changeQty(qtyButton.dataset.id, Number(qtyButton.dataset.delta));
+      const priceButton = event.target.closest('[data-action="price-options"]');
+      if (priceButton) {
+        state.expandedPriceRows.has(priceButton.dataset.id) ? state.expandedPriceRows.delete(priceButton.dataset.id) : state.expandedPriceRows.add(priceButton.dataset.id);
+        renderMenu();
+        return;
+      }
+      const toggle = event.target.closest('[data-group-toggle]');
+      if (toggle) {
+        state.expandedMenuGroup = state.expandedMenuGroup === toggle.dataset.groupToggle ? null : toggle.dataset.groupToggle;
+        renderMenu();
+      }
+    });
+    $('menuFilters').addEventListener('click', (event) => {
+      const button = event.target.closest('[data-filter]');
+      if (button) setMenuFilter(button.dataset.filter);
+    });
+    $('clearOrderButton').addEventListener('click', clearOrder);
+    $('sendOrderButton').addEventListener('click', submitOrder);
+    $('readyAlertsList').addEventListener('click', (event) => {
+      const button = event.target.closest('[data-dismiss-alert]');
+      if (!button) return;
+      dismissReadyAlert(button.dataset.dismissAlert);
+    });
+    $('logoutButton').addEventListener('click', window.KandaharAuth.logout);
+    checkExistingLogin();
+  </script>
+</body>
+</html>

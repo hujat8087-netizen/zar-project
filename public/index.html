@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Login | Zarchinar Restaurant</title>
+  <meta name="theme-color" content="#18202f" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="stylesheet" href="/styles.css" />
+  <script src="/theme.js"></script>
+</head>
+<body>
+  <section id="loginScreen" class="login-screen">
+    <div class="login-panel">
+      <p class="eyebrow">Zarchinar Restaurant</p>
+      <h1>سیستم ته ننوتل</h1>
+      <p>خپل پاسورډ ولیکئ، سیستم به خپل بخش ته داخل شي.</p>
+      <div class="field">
+        <label for="systemPassword">Password / پاسورډ</label>
+        <div class="password-field">
+          <input id="systemPassword" class="input" type="password" autocomplete="current-password" placeholder="Enter password" autofocus />
+          <button type="button" class="password-toggle" data-password-toggle aria-controls="systemPassword" aria-label="Show password" aria-pressed="false">Show</button>
+        </div>
+      </div>
+      <div style="height: 12px"></div>
+      <button id="loginButton" class="button primary" type="button">Login</button>
+      <div id="loginMessage" class="notice danger hidden" style="margin-top: 12px"></div>
+    </div>
+  </section>
+
+  <script src="/password-toggle.js"></script>
+  <script src="/auth.js?v=3"></script>
+  <script src="/offline.js"></script>
+  <script>
+    const $ = (id) => document.getElementById(id);
+
+    function showLoginError(message) {
+      $('loginMessage').textContent = message;
+      $('loginMessage').classList.remove('hidden');
+    }
+
+    async function login() {
+      const role = await window.KandaharAuth.loginWithPassword($('systemPassword').value);
+      if (!role) {
+        showLoginError('غلط پاسورډ / Incorrect password');
+        return;
+      }
+      window.KandaharAuth.redirectToRole(role.key);
+    }
+
+    const activeRole = window.KandaharAuth.currentRole();
+    if (activeRole) {
+      window.KandaharAuth.redirectToRole(activeRole);
+    }
+
+    $('loginButton').addEventListener('click', login);
+    $('systemPassword').addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') login();
+    });
+  </script>
+</body>
+</html>
